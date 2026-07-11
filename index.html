@@ -148,8 +148,27 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .okuru{margin-top:20px;background:none;border:none;color:var(--ink-70);font-family:inherit;font-size:.82rem;letter-spacing:.2em;cursor:pointer;border-bottom:1px solid var(--ink-25);padding-bottom:3px;animation:nijimu 2s ease 4.2s both}
 .okuru:hover{color:var(--shu);border-color:var(--shu)}
 /* ===== 音の栓 ===== */
-#otobtn{
+#otokit{
   position:fixed;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:6;
+  display:flex;align-items:center;gap:10px;
+}
+/* 音量バー（墨の濃淡）。タッチ端末では本体音量に任せて隠す */
+#otovol{
+  -webkit-appearance:none;appearance:none;width:96px;height:3px;border-radius:2px;
+  background:linear-gradient(90deg,var(--ink-70) var(--fill,70%),var(--ink-12) var(--fill,70%));
+  cursor:pointer;opacity:0;transition:opacity .4s;
+}
+#otokit:hover #otovol,#otovol:focus-visible{opacity:1}
+@media (hover:none),(pointer:coarse){#otovol{display:none}}
+#otovol::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--paper);border:1.5px solid var(--ink-70);
+}
+#otovol::-moz-range-thumb{
+  width:12px;height:12px;border-radius:50%;
+  background:var(--paper);border:1.5px solid var(--ink-70);
+}
+#otobtn{
   width:44px;height:44px;border-radius:50%;
   font-family:"Yuji Syuku","Shippori Mincho",serif;font-size:1.05rem;
   border:1px solid var(--ink-25);background:rgba(246,243,234,.75);color:var(--ink-70);
@@ -157,6 +176,15 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 }
 #otobtn:hover{border-color:var(--ink-70);color:var(--ink)}
 #otobtn.off{color:var(--ink-25);text-decoration:line-through;text-decoration-color:var(--shu);text-decoration-thickness:2px}
+/* アプリ内ブラウザへの案内 */
+#otohint{
+  position:fixed;top:calc(64px + env(safe-area-inset-top));right:14px;z-index:6;
+  max-width:230px;padding:10px 14px;border-radius:4px;
+  background:rgba(246,243,234,.95);border:1px solid var(--ink-25);
+  color:var(--ink-70);font-size:.72rem;line-height:1.8;letter-spacing:.06em;
+  opacity:0;pointer-events:none;transition:opacity .8s;
+}
+#otohint.show{opacity:1}
 
 /* ===== 庭 ===== */
 #garden{justify-content:flex-start;padding-top:calc(16px + env(safe-area-inset-top))}
@@ -325,8 +353,12 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 <!-- 墨流しの水面 -->
 <canvas id="ink"></canvas>
 
-<!-- 音の栓（BGM・効果音の切り替え） -->
-<button id="otobtn" aria-label="音の切り替え" onclick="Oto.toggle()">音</button>
+<!-- 音の栓（BGM・効果音の切り替えと音量） -->
+<div id="otokit">
+  <input type="range" id="otovol" min="0" max="1" step="0.01" aria-label="音量">
+  <button id="otobtn" aria-label="音の切り替え" onclick="Oto.toggle()">音</button>
+</div>
+<div id="otohint">音が鳴らないときは、マナーモードを解除するか、メニューの「ブラウザで開く」からどうぞ</div>
 
 <!-- タイトル -->
 <div class="screen active" id="title">
@@ -652,18 +684,41 @@ let LAST=null;
    効果音＝水滴・拾い・鐘。BGM＝低い墨の drone＋水のせせらぎ＋
    ときどき琴が一音つまびく生成アンビエント。 */
 const Oto=(()=>{
-  let ctx=null, master=null, bgmGain=null, on=localStorage.getItem("sumiyomi-oto")!=="off";
+  let ctx=null, master=null, bgmGain=null, hall=null, on=localStorage.getItem("sumiyomi-oto")!=="off";
+  let vol=parseFloat(localStorage.getItem("sumiyomi-vol"));
+  if(!(vol>=0&&vol<=1)) vol=.7;
   let bgmStarted=false, kotoTimer=null;
   const btn=document.getElementById("otobtn");
-  function paint(){btn.classList.toggle("off",!on);}
+  const slider=document.getElementById("otovol");
+  function paint(){
+    btn.classList.toggle("off",!on);
+    slider.value=vol;
+    slider.style.setProperty("--fill",(vol*100)+"%");
+  }
   paint();
+  slider.addEventListener("input",()=>{
+    vol=parseFloat(slider.value);
+    localStorage.setItem("sumiyomi-vol",vol);
+    slider.style.setProperty("--fill",(vol*100)+"%");
+    wake();
+    if(master&&on) master.gain.setTargetAtTime(vol,ctx.currentTime,.05);
+  });
   function wake(){
     if(!ctx){
       const AC=window.AudioContext||window.webkitAudioContext;
       if(!AC) return;
       ctx=new AC();
-      master=ctx.createGain(); master.gain.value=on?1:0; master.connect(ctx.destination);
-      bgmGain=ctx.createGain(); bgmGain.gain.value=0; bgmGain.connect(master);
+      master=ctx.createGain(); master.gain.value=on?vol:0; master.connect(ctx.destination);
+      /* 残響（お堂の間の響き）：減衰ノイズのインパルス応答による畳み込みリバーブ */
+      hall=ctx.createConvolver();
+      const sr=ctx.sampleRate, ilen=sr*2.8, ir=ctx.createBuffer(2,ilen,sr);
+      for(let c=0;c<2;c++){const d=ir.getChannelData(c);
+        for(let i=0;i<ilen;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/ilen,2.6);}
+      hall.buffer=ir;
+      const hg=ctx.createGain(); hg.gain.value=.45;
+      hall.connect(hg); hg.connect(master);
+      bgmGain=ctx.createGain(); bgmGain.gain.value=0;
+      bgmGain.connect(master); bgmGain.connect(hall);
       startBGM();
     }
     if(ctx.state==="suspended") ctx.resume();
@@ -671,7 +726,7 @@ const Oto=(()=>{
   function toggle(){
     on=!on; localStorage.setItem("sumiyomi-oto",on?"on":"off"); paint();
     wake();
-    if(master) master.gain.setTargetAtTime(on?1:0,ctx.currentTime,.1);
+    if(master) master.gain.setTargetAtTime(on?vol:0,ctx.currentTime,.1);
   }
   /* --- 部品 --- */
   function tone(freq,type,t0,dur,peak,dest){
@@ -723,7 +778,7 @@ const Oto=(()=>{
     if(!ctx||!on)return;
     const t=ctx.currentTime, base=540;
     [[1,.11,3.6],[2.76,.05,2.6],[5.4,.022,1.7],[1.005,.06,4.2]].forEach(([r,v,d])=>{
-      tone(base*r,"sine",t,d,v);
+      tone(base*r,"sine",t,d,v,bgmGain); /* 残響の間に響かせる */
     });
   }
   function stamp(){ /* 落款：とん */
@@ -732,53 +787,138 @@ const Oto=(()=>{
     const o=tone(150,"sine",t,.2,.12);
     o.frequency.exponentialRampToValueAtTime(60,t+.15);
   }
-  /* --- BGM（生成アンビエント） --- */
+  /* --- BGM（琴が主役の生成アンビエント。低い drone は置かない） --- */
+  /* 陽音階（明るい和のペンタトニック）：D を宮とする二オクターブ＋きらめきの一音
+     半音を含む都節だと物悲しくなるため、わび寂のある明るさはこちら */
+  const KOTO_SCALE=[293.7,329.6,370,440,493.9,587.3,659.3,740,880,987.8,1174.7];
+  /* Karplus-Strong 撥弦シミュレーション：
+     ノイズで「爪が弾いた瞬間」を作り、弦の長さぶんの遅延ループで
+     何千回も往復・減衰させる＝本物の弦と同じ物理で音を作る。
+     一度計算した弦はキャッシュして使い回す。 */
+  const ksCache={};
+  function ksBuf(fr){
+    const key=Math.round(fr);
+    if(ksCache[key])return ksCache[key];
+    const sr=ctx.sampleRate, dur=3.2, len=Math.floor(sr*dur);
+    const buf=ctx.createBuffer(1,len,sr), out=buf.getChannelData(0);
+    const N=Math.round(sr/fr);
+    const d=new Float32Array(N);
+    for(let i=0;i<N;i++)d[i]=Math.random()*2-1;
+    /* 弾く位置を端寄りにする（琴らしい張りのある倍音） */
+    const pick=Math.max(2,Math.floor(N*.18));
+    for(let i=N-1;i>=pick;i--)d[i]-=d[i-pick]*.5;
+    /* 低い弦ほど長く、高い弦ほど早めに減衰 */
+    const T=Math.min(3,1.9*Math.sqrt(440/fr)+.5);
+    const decay=Math.pow(.001,1/(sr*T));
+    let idx=0;
+    for(let i=0;i<len;i++){
+      const cur=d[idx], nxt=d[(idx+1)%N];
+      out[i]=cur;
+      d[idx]=(cur+nxt)*.5*decay;
+      idx=(idx+1)%N;
+    }
+    ksCache[key]=buf; return buf;
+  }
+  function kotoNote(t2,fr,vel){
+    const s=ctx.createBufferSource(); s.buffer=ksBuf(fr);
+    /* 弦ごとの個体差：ほんの少しだけ音程を揺らす */
+    s.playbackRate.value=1+(Math.random()*2-1)*.0025;
+    const fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.frequency.value=6500;
+    const g=ctx.createGain(); g.gain.value=vel*2.4;
+    s.connect(fl); fl.connect(g); g.connect(bgmGain);
+    s.start(t2);
+  }
   function startBGM(){
     if(bgmStarted)return; bgmStarted=true;
     const t=ctx.currentTime;
-    /* 低い墨の drone（2音の五度、ゆっくり息をする） */
-    [[110,.02],[165,.013],[220.6,.007]].forEach(([f,v])=>{
-      const o=ctx.createOscillator(); o.type="sine"; o.frequency.value=f;
-      const g=ctx.createGain(); g.gain.value=v;
-      const lfo=ctx.createOscillator(); lfo.frequency.value=.05+Math.random()*.04;
-      const lg=ctx.createGain(); lg.gain.value=v*.5;
-      lfo.connect(lg); lg.connect(g.gain);
-      o.connect(g); g.connect(bgmGain);
-      o.start(t); lfo.start(t);
-    });
-    /* 水のせせらぎ（濾したノイズ） */
-    const s=ctx.createBufferSource(); s.buffer=noiseBuf(4); s.loop=true;
-    const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=700; f.Q.value=.6;
-    const g=ctx.createGain(); g.gain.value=.011;
-    const lfo=ctx.createOscillator(); lfo.frequency.value=.11;
-    const lg=ctx.createGain(); lg.gain.value=260;
-    lfo.connect(lg); lg.connect(f.frequency);
-    s.connect(f); f.connect(g); g.connect(bgmGain);
-    s.start(t); lfo.start(t);
-    /* 琴のつまびき（平調子のペンタトニック、ときどき一音） */
-    const SCALE=[220,246.9,261.6,329.6,349.2,440,493.9,523.3];
-    function pluck(){
-      if(on&&ctx.state==="running"&&Math.random()<.85){
-        const t2=ctx.currentTime, fr=SCALE[Math.floor(Math.random()*SCALE.length)];
-        const o=ctx.createOscillator(); o.type="triangle"; o.frequency.value=fr;
-        const fl=ctx.createBiquadFilter(); fl.type="lowpass";
-        fl.frequency.setValueAtTime(2600,t2);
-        fl.frequency.exponentialRampToValueAtTime(500,t2+1.1);
-        const g=ctx.createGain();
-        g.gain.setValueAtTime(0,t2);
-        g.gain.linearRampToValueAtTime(.045,t2+.012);
-        g.gain.exponentialRampToValueAtTime(.0001,t2+1.6);
-        o.connect(fl); fl.connect(g); g.connect(bgmGain);
-        o.start(t2); o.stop(t2+1.7);
-      }
-      kotoTimer=setTimeout(pluck, 4500+Math.random()*6500);
+    /* 水のせせらぎ：静止したノイズだと砂嵐に聞こえる。
+       本物の小川は複数の帯域が「こぽこぽ」と不規則に揺らいでいるので、
+       帯域フィルタ3声の中心周波数と音量をそれぞれ別の速さのLFOで
+       常時揺らして「流れ」を作る */
+    const bed=ctx.createBufferSource(); bed.buffer=noiseBuf(4); bed.loop=true;
+    const bf=ctx.createBiquadFilter(); bf.type="lowpass"; bf.frequency.value=750; bf.Q.value=.4;
+    const bg2=ctx.createGain(); bg2.gain.value=.007;
+    bed.connect(bf); bf.connect(bg2); bg2.connect(bgmGain);
+    bed.start(t);
+    for(let i=0;i<3;i++){
+      const src=ctx.createBufferSource(); src.buffer=noiseBuf(3+i); src.loop=true;
+      const bp=ctx.createBiquadFilter(); bp.type="bandpass";
+      bp.frequency.value=420+i*380; bp.Q.value=5;
+      /* ゆっくりの揺らぎ＋速いこぽこぽ、二重に周波数を揺らす */
+      const l1=ctx.createOscillator(); l1.frequency.value=.13+i*.11;
+      const l1g=ctx.createGain(); l1g.gain.value=170+i*70;
+      l1.connect(l1g); l1g.connect(bp.frequency);
+      const l2=ctx.createOscillator(); l2.frequency.value=1.3+i*.83;
+      const l2g=ctx.createGain(); l2g.gain.value=90+i*45;
+      l2.connect(l2g); l2g.connect(bp.frequency);
+      /* 音量もうねらせる（水かさの満ち引き） */
+      const vg=ctx.createGain(); vg.gain.value=.008;
+      const l3=ctx.createOscillator(); l3.frequency.value=.31+i*.27;
+      const l3g=ctx.createGain(); l3g.gain.value=.005;
+      l3.connect(l3g); l3g.connect(vg.gain);
+      src.connect(bp); bp.connect(vg); vg.connect(bgmGain);
+      src.start(t); l1.start(t); l2.start(t); l3.start(t);
     }
-    kotoTimer=setTimeout(pluck, 3000);
+    /* 琴のひとふし：フレーズの長さを測り、残響（約3秒）が消えきる前に
+       次の音が必ず始まるようにつなぐ。「間」はあっても「無音」は作らない */
+    function phrase(){
+      let tail=1800;
+      if(on&&ctx.state==="running"){
+        const t2=ctx.currentTime;
+        const n=3+Math.floor(Math.random()*4);
+        let idx=2+Math.floor(Math.random()*(KOTO_SCALE.length-4));
+        let when=t2;
+        for(let i=0;i<n;i++){
+          kotoNote(when, KOTO_SCALE[idx], .035+Math.random()*.02);
+          /* きらり：ときどき高音側で速い二連音（コロリン）を転がす */
+          if(Math.random()<.22&&idx<KOTO_SCALE.length-2){
+            kotoNote(when+.13, KOTO_SCALE[idx+2], .022);
+            kotoNote(when+.26, KOTO_SCALE[idx+1], .018);
+          }
+          /* 隣の音へなだらかに動く（上向き多めで明るく） */
+          idx+=(Math.random()<.48?-1:1)*(1+(Math.random()<.2?1:0));
+          idx=Math.max(0,Math.min(KOTO_SCALE.length-1,idx));
+          when+=.42+Math.random()*.5;
+        }
+        /* 結び：低い宮か、明るい高みのどちらかで締める */
+        if(Math.random()<.5){when+=.3; kotoNote(when, Math.random()<.6?KOTO_SCALE[0]:KOTO_SCALE[7], .04);}
+        /* 間（ま）：最後の音の弦の余韻＋残響が残っているうちに一音置き、
+           次のフレーズへ橋を架ける */
+        const gap=1.6+Math.random()*1.4;
+        if(Math.random()<.65) kotoNote(when+gap, KOTO_SCALE[Math.random()<.5?0:1], .028);
+        tail=(when-t2+gap+1.6+Math.random()*1.2)*1000;
+      }
+      kotoTimer=setTimeout(phrase, tail);
+    }
+    kotoTimer=setTimeout(phrase, 1200);
     /* BGMはそっと立ち上がる */
-    bgmGain.gain.setTargetAtTime(1,t,4);
+    bgmGain.gain.setTargetAtTime(1,t,3);
+  }
+  /* iPhoneのマナーモード対策：無音の<audio>を一度再生すると
+     Web Audioが「メディア再生」扱いに昇格し、消音スイッチでも鳴る */
+  let unlocked=false;
+  function unlock(){
+    if(unlocked)return; unlocked=true;
+    try{
+      const a=new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
+      a.loop=false; a.volume=.01;
+      const p=a.play(); if(p&&p.catch)p.catch(()=>{unlocked=false;});
+    }catch(e){unlocked=false;}
   }
   /* 最初の操作で目を覚ます（ブラウザの自動再生制限対策） */
-  addEventListener("pointerdown",wake,{passive:true});
+  addEventListener("pointerdown",()=>{unlock();wake();},{passive:true});
+  /* X・Instagram等のアプリ内ブラウザでは音が出にくいので、一度だけ案内する */
+  if(/Twitter|TwitterAndroid|Instagram|Line\/|FBAN|FBAV/i.test(navigator.userAgent)&&!localStorage.getItem("sumiyomi-hinted")){
+    const hint=document.getElementById("otohint");
+    addEventListener("pointerdown",function once(){
+      removeEventListener("pointerdown",once);
+      setTimeout(()=>{
+        hint.classList.add("show");
+        localStorage.setItem("sumiyomi-hinted","1");
+        setTimeout(()=>hint.classList.remove("show"),7000);
+      },1500);
+    },{passive:true});
+  }
   document.addEventListener("visibilitychange",()=>{
     if(!ctx)return;
     if(document.hidden) ctx.suspend(); else if(on) ctx.resume();
