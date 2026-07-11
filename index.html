@@ -242,7 +242,13 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
   border:1px solid var(--ink-45);border-radius:2px;background:transparent;
   color:var(--ink);cursor:pointer;transition:.25s;line-height:1.7;
 }
-.ans:hover{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+/* ホバー色は本物のマウスがある端末だけ（スマホは触った位置にホバーが残留し、
+   次の質問の同じ位置のボタンに色がつくバグに見えるため） */
+@media (hover:hover) and (pointer:fine){
+  .ans:hover{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+}
+/* 選んだ瞬間の「ぱっ」：端末を問わずこのクラスで明示的に付ける */
+.ans.hit{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 
 /* 小さい画面では質問もスクロール可能に（margin:autoで安全に中央寄せ） */
 #question{overflow-y:auto}
@@ -711,7 +717,7 @@ const Oto=(()=>{
       master=ctx.createGain(); master.gain.value=on?vol:0; master.connect(ctx.destination);
       /* 残響（お堂の間の響き）：減衰ノイズのインパルス応答による畳み込みリバーブ */
       hall=ctx.createConvolver();
-      const sr=ctx.sampleRate, ilen=sr*2.8, ir=ctx.createBuffer(2,ilen,sr);
+      const sr=ctx.sampleRate, ilen=Math.floor(sr*2.8), ir=ctx.createBuffer(2,ilen,sr);
       for(let c=0;c<2;c++){const d=ir.getChannelData(c);
         for(let i=0;i<ilen;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/ilen,2.6);}
       hall.buffer=ir;
@@ -740,7 +746,7 @@ const Oto=(()=>{
     return o;
   }
   function noiseBuf(sec){
-    const b=ctx.createBuffer(1,ctx.sampleRate*sec,ctx.sampleRate);
+    const b=ctx.createBuffer(1,Math.max(1,Math.floor(ctx.sampleRate*sec)),ctx.sampleRate);
     const d=b.getChannelData(0);
     for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
     return b;
@@ -1276,11 +1282,15 @@ function renderQuestion(){
 
 function answer(i){
   Oto.tap();
+  /* 選んだボタンに「ぱっ」と色を付けて一拍見せてから次へ。二度押しも防ぐ */
+  const btns=document.querySelectorAll("#qcard .ans");
+  btns.forEach(b=>b.disabled=true);
+  if(btns[i]) btns[i].classList.add("hit");
   const[text,add,refl]=curQ.ans[i];
   answers.push({text,refl});
   for(const[k,v]of Object.entries(add)) score[k]+=v;
   qIndex++;
-  if(qIndex<qQueue.length) renderQuestion(); else renderResult();
+  setTimeout(()=>{ if(qIndex<qQueue.length) renderQuestion(); else renderResult(); },180);
 }
 
 function renderResult(){
