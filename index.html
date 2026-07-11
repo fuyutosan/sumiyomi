@@ -147,6 +147,16 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .jikoku{margin-top:12px;color:var(--ink-45);font-size:.75rem;letter-spacing:.45em;animation:nijimu 2s ease 4s both}
 .okuru{margin-top:20px;background:none;border:none;color:var(--ink-70);font-family:inherit;font-size:.82rem;letter-spacing:.2em;cursor:pointer;border-bottom:1px solid var(--ink-25);padding-bottom:3px;animation:nijimu 2s ease 4.2s both}
 .okuru:hover{color:var(--shu);border-color:var(--shu)}
+/* ===== 音の栓 ===== */
+#otobtn{
+  position:fixed;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:6;
+  width:44px;height:44px;border-radius:50%;
+  font-family:"Yuji Syuku","Shippori Mincho",serif;font-size:1.05rem;
+  border:1px solid var(--ink-25);background:rgba(246,243,234,.75);color:var(--ink-70);
+  cursor:pointer;transition:.3s;backdrop-filter:blur(2px);
+}
+#otobtn:hover{border-color:var(--ink-70);color:var(--ink)}
+#otobtn.off{color:var(--ink-25);text-decoration:line-through;text-decoration-color:var(--shu);text-decoration-thickness:2px}
 
 /* ===== 庭 ===== */
 #garden{justify-content:flex-start;padding-top:calc(16px + env(safe-area-inset-top))}
@@ -314,6 +324,9 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 
 <!-- 墨流しの水面 -->
 <canvas id="ink"></canvas>
+
+<!-- 音の栓（BGM・効果音の切り替え） -->
+<button id="otobtn" aria-label="音の切り替え" onclick="Oto.toggle()">音</button>
 
 <!-- タイトル -->
 <div class="screen active" id="title">
@@ -634,6 +647,145 @@ const SPLATS = [
 let score={}, picked=[], answers=[], qQueue=[], qIndex=0, floatTimer=null, pool=[];
 let LAST=null;
 
+/* ===== 音詠みエンジン（Oto） =====
+   外部音源を使わず、Web Audio APIですべての音をその場で合成する。
+   効果音＝水滴・拾い・鐘。BGM＝低い墨の drone＋水のせせらぎ＋
+   ときどき琴が一音つまびく生成アンビエント。 */
+const Oto=(()=>{
+  let ctx=null, master=null, bgmGain=null, on=localStorage.getItem("sumiyomi-oto")!=="off";
+  let bgmStarted=false, kotoTimer=null;
+  const btn=document.getElementById("otobtn");
+  function paint(){btn.classList.toggle("off",!on);}
+  paint();
+  function wake(){
+    if(!ctx){
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return;
+      ctx=new AC();
+      master=ctx.createGain(); master.gain.value=on?1:0; master.connect(ctx.destination);
+      bgmGain=ctx.createGain(); bgmGain.gain.value=0; bgmGain.connect(master);
+      startBGM();
+    }
+    if(ctx.state==="suspended") ctx.resume();
+  }
+  function toggle(){
+    on=!on; localStorage.setItem("sumiyomi-oto",on?"on":"off"); paint();
+    wake();
+    if(master) master.gain.setTargetAtTime(on?1:0,ctx.currentTime,.1);
+  }
+  /* --- 部品 --- */
+  function tone(freq,type,t0,dur,peak,dest){
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t0);
+    g.gain.setValueAtTime(0,t0);
+    g.gain.linearRampToValueAtTime(peak,t0+.008);
+    g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    o.connect(g); g.connect(dest||master);
+    o.start(t0); o.stop(t0+dur+.05);
+    return o;
+  }
+  function noiseBuf(sec){
+    const b=ctx.createBuffer(1,ctx.sampleRate*sec,ctx.sampleRate);
+    const d=b.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    return b;
+  }
+  /* --- 効果音 --- */
+  function drip(vol){ /* 水滴：ぴちょん */
+    if(!ctx||!on)return;
+    const t=ctx.currentTime, v=vol||.09;
+    const o=tone(520,"sine",t,.3,v);
+    o.frequency.exponentialRampToValueAtTime(980,t+.12);
+  }
+  function plop(){ /* 言の葉を拾う：ぽちゃん＋墨の渦 */
+    if(!ctx||!on)return;
+    const t=ctx.currentTime;
+    const o=tone(190,"sine",t,.4,.16);
+    o.frequency.exponentialRampToValueAtTime(520,t+.16);
+    /* 渦（ノイズのうねり） */
+    const s=ctx.createBufferSource(); s.buffer=noiseBuf(.9);
+    const f=ctx.createBiquadFilter(); f.type="bandpass"; f.Q.value=2.2;
+    f.frequency.setValueAtTime(380,t);
+    f.frequency.exponentialRampToValueAtTime(1400,t+.7);
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(.05,t);
+    g.gain.exponentialRampToValueAtTime(.0001,t+.85);
+    s.connect(f);f.connect(g);g.connect(master);
+    s.start(t); s.stop(t+.9);
+  }
+  function tap(){ /* 回答：筆先がこつんと触れる */
+    if(!ctx||!on)return;
+    const t=ctx.currentTime;
+    tone(240,"triangle",t,.14,.07);
+    tone(480,"sine",t,.08,.03);
+  }
+  function rin(){ /* 結果：おりんの鐘（倍音を重ねて長く響かせる） */
+    if(!ctx||!on)return;
+    const t=ctx.currentTime, base=540;
+    [[1,.11,3.6],[2.76,.05,2.6],[5.4,.022,1.7],[1.005,.06,4.2]].forEach(([r,v,d])=>{
+      tone(base*r,"sine",t,d,v);
+    });
+  }
+  function stamp(){ /* 落款：とん */
+    if(!ctx||!on)return;
+    const t=ctx.currentTime;
+    const o=tone(150,"sine",t,.2,.12);
+    o.frequency.exponentialRampToValueAtTime(60,t+.15);
+  }
+  /* --- BGM（生成アンビエント） --- */
+  function startBGM(){
+    if(bgmStarted)return; bgmStarted=true;
+    const t=ctx.currentTime;
+    /* 低い墨の drone（2音の五度、ゆっくり息をする） */
+    [[110,.02],[165,.013],[220.6,.007]].forEach(([f,v])=>{
+      const o=ctx.createOscillator(); o.type="sine"; o.frequency.value=f;
+      const g=ctx.createGain(); g.gain.value=v;
+      const lfo=ctx.createOscillator(); lfo.frequency.value=.05+Math.random()*.04;
+      const lg=ctx.createGain(); lg.gain.value=v*.5;
+      lfo.connect(lg); lg.connect(g.gain);
+      o.connect(g); g.connect(bgmGain);
+      o.start(t); lfo.start(t);
+    });
+    /* 水のせせらぎ（濾したノイズ） */
+    const s=ctx.createBufferSource(); s.buffer=noiseBuf(4); s.loop=true;
+    const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=700; f.Q.value=.6;
+    const g=ctx.createGain(); g.gain.value=.011;
+    const lfo=ctx.createOscillator(); lfo.frequency.value=.11;
+    const lg=ctx.createGain(); lg.gain.value=260;
+    lfo.connect(lg); lg.connect(f.frequency);
+    s.connect(f); f.connect(g); g.connect(bgmGain);
+    s.start(t); lfo.start(t);
+    /* 琴のつまびき（平調子のペンタトニック、ときどき一音） */
+    const SCALE=[220,246.9,261.6,329.6,349.2,440,493.9,523.3];
+    function pluck(){
+      if(on&&ctx.state==="running"&&Math.random()<.85){
+        const t2=ctx.currentTime, fr=SCALE[Math.floor(Math.random()*SCALE.length)];
+        const o=ctx.createOscillator(); o.type="triangle"; o.frequency.value=fr;
+        const fl=ctx.createBiquadFilter(); fl.type="lowpass";
+        fl.frequency.setValueAtTime(2600,t2);
+        fl.frequency.exponentialRampToValueAtTime(500,t2+1.1);
+        const g=ctx.createGain();
+        g.gain.setValueAtTime(0,t2);
+        g.gain.linearRampToValueAtTime(.045,t2+.012);
+        g.gain.exponentialRampToValueAtTime(.0001,t2+1.6);
+        o.connect(fl); fl.connect(g); g.connect(bgmGain);
+        o.start(t2); o.stop(t2+1.7);
+      }
+      kotoTimer=setTimeout(pluck, 4500+Math.random()*6500);
+    }
+    kotoTimer=setTimeout(pluck, 3000);
+    /* BGMはそっと立ち上がる */
+    bgmGain.gain.setTargetAtTime(1,t,4);
+  }
+  /* 最初の操作で目を覚ます（ブラウザの自動再生制限対策） */
+  addEventListener("pointerdown",wake,{passive:true});
+  document.addEventListener("visibilitychange",()=>{
+    if(!ctx)return;
+    if(document.hidden) ctx.suspend(); else if(on) ctx.resume();
+  });
+  return {wake,toggle,drip,plop,tap,rin,stamp};
+})();
+
 /* ===== 墨流しエンジン（水面のリアルタイムシミュレーション） =====
    墨の輪（リング）をポリラインとして持ち、各点をノイズ由来の水流＋
    渦＋ポインタのかき混ぜで毎フレーム移流させる。本物の墨流しと同じ原理。 */
@@ -643,7 +795,7 @@ const Ink=(()=>{
   const mobile=matchMedia("(max-width:600px)").matches;
   const PTS=mobile?80:110, MAXR=mobile?18:26;
   const rings=[], vortices=[];
-  const mouse={x:-999,y:-999,vx:0,vy:0};
+  const mouse={x:-999,y:-999,vx:0,vy:0,down:false,dist:0};
   function resize(){
     dpr=Math.min(window.devicePixelRatio||1,1.5);
     W=window.innerWidth; H=window.innerHeight;
@@ -654,8 +806,22 @@ const Ink=(()=>{
   addEventListener("pointermove",e=>{
     const nx=e.clientX, ny=e.clientY;
     if(mouse.x>-999){ mouse.vx=mouse.vx*.6+(nx-mouse.x)*.4; mouse.vy=mouse.vy*.6+(ny-mouse.y)*.4; }
+    if(mouse.down&&mouse.x>-999){
+      /* なぞった軌跡に墨を落とす（60pxごと） */
+      mouse.dist+=Math.hypot(nx-mouse.x,ny-mouse.y);
+      if(mouse.dist>60){ mouse.dist=0; addRing(nx,ny,1,.26); }
+    }
     mouse.x=nx; mouse.y=ny;
   },{passive:true});
+  addEventListener("pointerdown",e=>{
+    mouse.down=true; mouse.dist=0;
+    mouse.x=e.clientX; mouse.y=e.clientY;
+    /* 触れた場所に墨と小さな渦 */
+    addRing(e.clientX,e.clientY,1,.3);
+    vortices.push({x:e.clientX,y:e.clientY,s:80+Math.random()*40,dir:Math.random()>.5?1:-1});
+  },{passive:true});
+  addEventListener("pointerup",()=>{mouse.down=false;},{passive:true});
+  addEventListener("pointercancel",()=>{mouse.down=false;},{passive:true});
   /* 値ノイズ＋fbm（乱流の素） */
   function h(ix,iy){const n=Math.sin(ix*127.1+iy*311.7)*43758.5453;return n-Math.floor(n);}
   function sm(t){return t*t*(3-2*t);}
@@ -681,11 +847,12 @@ const Ink=(()=>{
       vout.x+=-dy*inv*v.s*fall*v.dir;
       vout.y+= dx*inv*v.s*fall*v.dir;
     }
-    /* ポインタのかき混ぜ */
+    /* ポインタのかき混ぜ（ドラッグ中は強く・広く効く） */
     const mdx=px-mouse.x, mdy=py-mouse.y, md2=mdx*mdx+mdy*mdy;
-    const mfall=Math.exp(-md2/26000);
-    vout.x+=mouse.vx*mfall*2.2;
-    vout.y+=mouse.vy*mfall*2.2;
+    const mfall=Math.exp(-md2/(mouse.down?52000:26000));
+    const mpow=mouse.down?5.5:2.2;
+    vout.x+=mouse.vx*mfall*mpow;
+    vout.y+=mouse.vy*mfall*mpow;
     return vout;
   }
   function addRing(x,y,n,alpha){
@@ -743,9 +910,11 @@ const Ink=(()=>{
   document.addEventListener("visibilitychange",()=>{running=!document.hidden;});
   requestAnimationFrame(t=>{last=t;requestAnimationFrame(step);});
   /* ときどき、どこかに墨が落ちる */
-  setInterval(()=>{ if(rings.length<MAXR-4) drop(Math.random()*W, Math.random()*H*.8+H*.1); },5200);
-  /* 開幕：題字の下に最初のひと垂らし */
+  setInterval(()=>{ if(rings.length<MAXR-4){ drop(Math.random()*W, Math.random()*H*.8+H*.1); if(Math.random()<.5) Oto.drip(.035); } },5200);
+  /* 開幕：題字の下に最初のひと垂らし＋庭の隅にも */
   setTimeout(()=>drop(W*.5,H*.42),1600);
+  setTimeout(()=>drop(W*.24,H*.3),3200);
+  setTimeout(()=>drop(W*.76,H*.62),4600);
   return {drop,burst};
 })();
 
@@ -871,6 +1040,7 @@ function startGarden(){
   for(let i=0;i<6;i++) spawnWord();
   floatTimer=setInterval(spawnWord, 700);
   Ink.drop(window.innerWidth*.5, window.innerHeight*.5);
+  Oto.wake(); Oto.drip(.08);
 }
 
 function spawnWord(){
@@ -918,6 +1088,7 @@ function pickWord(w,el){
   // 水面が渦を巻く
   const rc=el.getBoundingClientRect();
   Ink.burst(rc.left+rc.width/2, rc.top+rc.height/2);
+  Oto.plop();
   // 墨はね＋波紋
   const sp=document.createElementNS("http://www.w3.org/2000/svg","svg");
   sp.setAttribute("viewBox","0 0 128 128"); sp.classList.add("splat");
@@ -964,6 +1135,7 @@ function renderQuestion(){
 }
 
 function answer(i){
+  Oto.tap();
   const[text,add,refl]=curQ.ans[i];
   answers.push({text,refl});
   for(const[k,v]of Object.entries(add)) score[k]+=v;
@@ -1004,6 +1176,7 @@ function renderResult(){
       </div>
     </div>`;
   track("play-result");
+  Oto.rin();
   show("result");
   document.getElementById("result").scrollTop=0;
   card.classList.remove("fade-slow"); void card.offsetWidth; card.classList.add("fade-slow");
@@ -1025,6 +1198,7 @@ function drawSpaced(ctx,text,x,y,size,font,color,ls){
 }
 async function makeFuda(){
   if(!LAST) return;
+  Oto.stamp();
   track("make-fuda");
   await Promise.all([
     document.fonts.load('130px "Yuji Boku"'),
