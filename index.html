@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Yuji+Syuku&family=Yuji+Boku&display=swap" rel="stylesheet">
+<script data-goatcounter="https://sumiyomi.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <style>
 :root{
   --paper:#f6f3ea; --paper2:#efebdf;
@@ -621,6 +622,10 @@ const MUSUBI = [
 ];
 
 const APP_URL="https://fuyutosan.github.io/sumiyomi/";
+/* 計測イベント（ファネル：訪問→結果到達→札作成→シェア） */
+function track(name){
+  if(window.goatcounter&&goatcounter.count) goatcounter.count({path:name,event:true});
+}
 const AXES = ["疲","憂","熾","寂","澄","灯","惑","温"];
 const SPLATS = [
   'M60 22 C 84 14, 106 30, 108 54 C 110 76, 92 96, 68 98 C 44 100, 24 86, 20 62 C 16 40, 36 28, 60 22 Z M112 30 a5 5 0 1 1 0 .1 Z M96 96 a4 4 0 1 1 0 .1 Z M18 36 a3.4 3.4 0 1 1 0 .1 Z',
@@ -998,6 +1003,7 @@ function renderResult(){
         <button class="btn" onclick="startGarden()">もう一度 庭へ</button>
       </div>
     </div>`;
+  track("play-result");
   show("result");
   document.getElementById("result").scrollTop=0;
   card.classList.remove("fade-slow"); void card.offsetWidth; card.classList.add("fade-slow");
@@ -1019,6 +1025,7 @@ function drawSpaced(ctx,text,x,y,size,font,color,ls){
 }
 async function makeFuda(){
   if(!LAST) return;
+  track("make-fuda");
   await Promise.all([
     document.fonts.load('130px "Yuji Boku"'),
     document.fonts.load('60px "Yuji Syuku"'),
@@ -1115,6 +1122,7 @@ async function shareFuda(){
 }
 function shareX(){
   const words=LAST.words.map(t=>"「"+t+"」").join("");
+  track("share-x");
   const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\n墨が、あなたのこころを詠む #墨詠み`;
   window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(APP_URL),"_blank");
 }
