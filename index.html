@@ -142,6 +142,10 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .btn:hover{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .btn.shu{border-color:rgba(176,58,32,.6)}
 .btn.shu:hover{background:var(--shu);border-color:var(--shu);color:#fff}
+.btn.ig{border-color:rgba(193,53,132,.55)}
+.btn.ig:hover{background:linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7);border-color:transparent;color:#fff}
+.btn.line{border-color:rgba(6,199,85,.55)}
+.btn.line:hover{background:#06c755;border-color:#06c755;color:#fff}
 #title .btn{margin-top:30px;animation:nijimu 2s ease 3.6s both}
 .roma{margin-top:14px;color:var(--ink-45);font-size:.6rem;letter-spacing:.5em;text-indent:.5em;animation:nijimu 2.2s ease 3.4s both}
 .jikoku{margin-top:12px;color:var(--ink-45);font-size:.75rem;letter-spacing:.45em;animation:nijimu 2s ease 4s both}
@@ -293,6 +297,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-wc{color:var(--ink-70)}
 .r-advice{background:var(--ink-12);border-left:3px solid var(--ink-70);padding:14px 18px;border-radius:0 2px 2px 0;line-height:2;font-size:.93rem;margin-bottom:14px}
 .r-musubi{text-align:center;font-family:"Yuji Syuku",serif;letter-spacing:.2em;color:var(--ink-70);font-size:1.05rem;line-height:2;margin:6px 0 2px}
+.r-date{font-family:"Shippori Mincho",serif;letter-spacing:.15em;color:var(--ink-45);font-size:.78rem;margin-bottom:6px}
 .r-btns{display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap}
 .r-btns .btn{padding:12px 26px;font-size:.92rem}
 
@@ -302,8 +307,19 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 #overlay.active{display:flex}
 #overlay img{max-width:min(88vw,420px);max-height:66vh;border-radius:3px;box-shadow:0 24px 80px rgba(0,0,0,.55)}
 #overlay .hint{color:#f0ede4;font-size:.82rem;letter-spacing:.15em}
-#overlay .r-btns{margin-top:0}
-#overlay .btn{background:rgba(246,243,234,.94)}
+.icon-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.icon-btn{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;color:#fff;
+  display:flex;align-items:center;justify-content:center;transition:.25s;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.icon-btn svg{width:24px;height:24px}
+.icon-btn:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(0,0,0,.32)}
+.icon-btn.save{background:#3a3630}
+.icon-btn.ig{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285aeb 90%)}
+.icon-btn.x{background:#000;font-size:1.3rem;font-family:serif}
+.icon-btn.line{background:#06c755}
+.overlay-sub{display:flex;gap:22px;justify-content:center}
+.overlay-sub button{background:none;border:none;color:#f0ede4;font-family:inherit;font-size:.78rem;
+  letter-spacing:.2em;cursor:pointer;border-bottom:1px solid rgba(240,237,228,.4);padding-bottom:2px}
+.overlay-sub button:hover{color:var(--shu);border-color:var(--shu)}
 
 .fade-slow{animation:fadein 1.6s ease}
 @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -411,10 +427,21 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 <div id="overlay">
   <img id="fuda" alt="結果札">
   <div class="hint">長押し・右クリックでも保存できます</div>
-  <div class="r-btns">
-    <button class="btn shu" onclick="saveFuda()">札を保存</button>
-    <button class="btn" onclick="shareFuda()">札を共有</button>
-    <button class="btn" onclick="document.getElementById('overlay').classList.remove('active')">閉じる</button>
+  <div class="icon-row">
+    <button class="icon-btn save" onclick="saveFuda()" aria-label="札を保存" title="札を保存">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+    </button>
+    <button class="icon-btn ig" onclick="shareFuda()" aria-label="Instagramでシェア" title="Instagramでシェア">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="4"/><circle cx="12" cy="13" r="4"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+    </button>
+    <button class="icon-btn x" onclick="shareX()" aria-label="𝕏でシェア" title="𝕏でシェア">𝕏</button>
+    <button class="icon-btn line" onclick="shareLine()" aria-label="LINEでシェア" title="LINEでシェア">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.58 2 11c0 3.54 2.92 6.53 6.94 7.6-.15.6-.96 3.3-.99 3.5 0 0-.02.17.09.24.11.07.24.02.24.02.32-.05 3.7-2.44 4.28-2.85.46.06.93.09 1.44.09 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg>
+    </button>
+  </div>
+  <div class="overlay-sub">
+    <button onclick="retryGarden()">もう一度試す</button>
+    <button onclick="document.getElementById('overlay').classList.remove('active')">閉じる</button>
   </div>
 </div>
 
@@ -598,7 +625,7 @@ const BASE = {
       advice:"この澄んだ時間に、大きな決断はしないこと。「本当に大切にしたいもの」をひとつだけ思い浮かべてください。静かな水面にこそ、本心は正しく映ります。"},
   灯:{body:"あなたのこころには今、小さくても確かな灯りがあります。期待、はじまりの予感、誰かへの想い。その灯は、もうあなたを前へ進ませはじめています。",
       advice:"灯が消えないうちに、いちばん小さな一歩を今日のうちに。5分でできることでかまいません。灯りは、動いた分だけ大きくなります。"},
-  惑:{body:"あなたは今、霧の中で足を止めています。それは遭難ではありません。選べる道を複数持っている人にだけ、迷いは訪れます。足を止めているのは、思慮です。",
+  惑:{body:"あなたは今、霧の中で足を止めています。「なんでこんな気分なんだろう」と、理由は自分でもまだ掴めていないのかもしれません。それは遭難ではありません。選べる道を複数持っている人にだけ、迷いは訪れます。足を止めているのは、思慮です。",
       advice:"「正しい道」を探すのを、いったんやめてください。「今日いちばん気が楽な一歩」を選ぶ。霧は、歩いた人の後ろから晴れていきます。"},
   温:{body:"あなたのまんなかには今、あたたかいものが息づいています。感謝、守りたいもの、ぬくもりの記憶。あなたは今、受け取ることも渡すこともできる場所に立っています。",
       advice:"そのあたたかさを、言葉にして一度外へ出してください。「ありがとう」でも「助かったよ」でも。ぬくもりは、渡すと倍になります。"},
@@ -611,42 +638,42 @@ const PAIR = {
   疲寂:"その疲れは、ひとりで背負ってきた種類の疲れです。弱音の置き場所を、あなたは長いこと持っていません。",
   疲澄:"疲れの中に、不思議な静けさがあります。嵐は過ぎています。あなたの庭は、もう荒れていません。",
   疲灯:"くたびれているのに、灯りは消えていません。それが、あなたの芯の強さです。",
-  疲惑:"何に疲れたのか、あなた自身もまだ掴めていません。正体の見えない疲れが、いちばん重いのです。",
+  疲惑:"何に疲れたのか、「なんでだろう」と自分でもまだ掴めていません。正体の見えない疲れが、いちばん重いのです。",
   疲温:"疲れの奥に、誰かへのやさしさが見えます。あなたは、人を思いやった分だけすり減ってきた人です。",
   憂疲:"不安の下に、積もった疲れが隠れています。あなたは心配性なのではなく、ただ休息が足りていません。",
   憂熾:"不安と焦りが背中合わせです。「早くしなきゃ」が、あなたの不安を実物より大きく育てています。",
   憂寂:"その不安を、あなたはひとりで抱えています。声に出せば半分になる種類の不安です。",
   憂澄:"不安を抱えながら、それを静かに眺める目をあなたは持っています。それは、まぎれもない強さです。",
   憂灯:"不安の向こうに、期待が透けています。怖いのは、望みがあるからです。",
-  憂惑:"不安と迷いが、霧のように混ざっています。今のあなたに必要なのは答えではなく、「今日決めなくていいこと」の一覧です。",
+  憂惑:"不安と迷いが、霧のように混ざっています。「なんでこんなに落ち着かないんだろう」の答えは、今日出さなくて大丈夫です。必要なのは「今日決めなくていいこと」の一覧です。",
   憂温:"不安の根っこに、大切な人やものがあります。それは、失いたくないものを持つ人だけの不安です。",
   熾疲:"熱の下で、あなたはかなり消耗しています。火を焚き続けるには薪が要ります。その薪が、もう少ない。",
   熾憂:"熱の裏に、不安が張り付いています。あなたの怒りは時々、怖さの鎧です。",
   熾寂:"熱があるのに、分かち合う相手が見当たらない。あなたの火は今、少し寂しい燃え方をしています。",
   熾澄:"熱いのに、頭のどこかが冷静です。その二枚腰は、あなたの武器です。",
   熾灯:"その熱は、壊すための熱ではなく、始めるための熱です。良い火です。",
-  熾惑:"熱の向き先が、まだ決まっていません。的のない矢は、飛ぶほどに疲れます。",
+  熾惑:"何にイラっとしたのか、熱の向き先がまだ決まっていません。的のない矢は、飛ぶほどに疲れます。",
   熾温:"怒りの根元に、愛情があります。大切だから、腹が立つ。あなたはそういう人です。",
   寂疲:"静けさの中に、疲れが沈んでいます。人といるのに疲れて、ひとりが沁みる。あなたは今、その時期にいます。",
   寂憂:"寂しさが、不安の入り口になりかけています。あなたの夜は今、考えごとに向いていません。",
   寂熾:"寂しさの奥で、小さな火が燻っています。本当は、動き出したいのです。",
   寂澄:"その孤独は、澄んでいます。ひとりの時間を味わえるのは、成熟の証です。",
   寂灯:"寂しさの中に、会いたい顔が浮かんでいます。灯りのある場所を、あなたはもう知っています。",
-  寂惑:"寂しさなのか迷いなのか、あなた自身も区別がついていません。名前のない感情は、名前のないままで置いておけます。",
+  寂惑:"寂しさなのか迷いなのか、「これって何て気持ちなんだろう」と自分でも区別がついていません。名前のない感情は、名前のないままで置いておけます。",
   寂温:"寂しさは、ぬくもりの記憶がある人にだけ訪れます。あなたは失ったのではなく、持っているのです。",
   澄疲:"澄んでいますが、それは少し疲れて力の抜けた静けさです。今のあなたには、休息がそのまま効きます。",
   澄憂:"静かな水面の下に、小さな心配が泳いでいます。見えているなら、大丈夫です。",
   澄熾:"静けさの底に、熱があります。凪いだ海ほど、深いところは動いています。",
   澄寂:"あなたは今、澄んだ孤独の中にいます。この時間は、あとから効いてくる栄養です。",
   澄灯:"心が澄んで、灯りも見えています。今が、動きどきです。",
-  澄惑:"落ち着いているのに、方角だけが決まっていません。それは、急ぐ理由にはなりません。",
+  澄惑:"落ち着いているのに、方角だけが決まっていません。「なんで決められないんだろう」と焦らなくて大丈夫。急ぐ理由にはなりません。",
   澄温:"静けさとぬくもりが、同居しています。今のあなたのそばは、きっと居心地がいい。",
   灯疲:"希望はあるのに、体力が追いついていません。灯を守るために、あなたにまず必要なのは休みです。",
   灯憂:"期待と不安は、同じ場所から生まれます。あなたの場合、先に消えるのは不安の方です。",
   灯熾:"灯りが、焚き火になりかけています。勢いは、今がいちばんあります。",
   灯寂:"希望の隣に、少しの心細さがあります。それは、誰かに宣言した瞬間に消える種類の心細さです。",
   灯澄:"希望が、静けさに支えられています。もっとも遠くまで歩ける組み合わせを、あなたは今持っています。",
-  灯惑:"灯りは見えているのに、道がまだ選べていません。ただ、灯りに近い道はもう見えています。",
+  灯惑:"灯りは見えているのに、「どっちに進めばいいんだろう」と道がまだ選べていません。ただ、灯りに近い道はもう見えています。",
   灯温:"その希望は、誰かのぬくもりから生まれた希望です。ちゃんと育つ種類のものです。",
   惑疲:"あなたは迷いすぎて、疲れています。選択肢の多さが、今のあなたの重さです。",
   惑憂:"迷いが不安を呼び、不安がまた迷いを呼んでいます。その輪の外に、あなたの答えがあります。",
@@ -654,7 +681,7 @@ const PAIR = {
   惑寂:"あなたは、ひとりで迷っています。必要なのは答えではなく、聞いてくれる人です。",
   惑澄:"迷っていますが、慌ててはいません。あなたは、良い迷い方をしています。",
   惑灯:"霧の向こうに、灯りがひとつ見えています。方角は、もうほとんど決まっています。",
-  惑温:"あなたの迷いの理由は、誰かを傷つけたくないからです。やさしい人の迷い方です。",
+  惑温:"「なんでこんなに迷うんだろう」の理由は、誰かを傷つけたくないからです。やさしい人の迷い方です。",
   温疲:"ぬくもりを配りすぎて、あなた自身が少し品切れです。次にあたためる番なのは、あなたです。",
   温憂:"大切なものがあるからこその心配です。愛情と不安は、よく似た顔をしています。",
   温熾:"あたたかさの中に、譲れない芯があります。あなたは、やさしいだけの人ではありません。",
@@ -1298,13 +1325,16 @@ function renderResult(){
   const p=sorted[0][0], s=sorted[1][0];
   const title=`${POET[p]}のなかの${POET[s]}`;
   const musubi=MUSUBI[Math.floor(Math.random()*MUSUBI.length)];
-  LAST={p,s,title,musubi,words:picked.map(w=>w.t)};
+  const now=new Date();
+  const date=`${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
+  LAST={p,s,title,musubi,words:picked.map(w=>w.t),date};
   const card=document.getElementById("rcard");
   card.innerHTML=`
     <div class="k-band"></div>
     <div class="k-inner">
       <div class="r-main">
         <div class="r-content">
+          <div class="r-date">${LAST.date}</div>
           <div class="r-label">いまの こころ</div>
           <div class="r-mitate">${answers.map(a=>`<p><span class="r-koe">「${a.text}」</span>── ${a.refl}</p>`).join("")}</div>
           <div class="r-body">${BASE[p].body}</div>
@@ -1320,8 +1350,8 @@ function renderResult(){
         </div>
       </div>
       <div class="r-btns">
-        <button class="btn shu" onclick="makeFuda()">結果札をつくる</button>
-        <button class="btn" onclick="shareX()">𝕏でつぶやく</button>
+        <button class="btn shu" onclick="makeFuda()">札をつくって保存</button>
+        <button class="btn ig" onclick="makeFuda()">札をつくってシェア</button>
         <button class="btn" onclick="startGarden()">もう一度 庭へ</button>
       </div>
     </div>`;
@@ -1388,7 +1418,8 @@ async function makeFuda(){
   // 枠（二重の墨罫）
   ctx.strokeStyle="rgba(29,26,21,.55)"; ctx.lineWidth=3; ctx.strokeRect(38,38,W-76,H-76);
   ctx.strokeStyle="rgba(29,26,21,.25)"; ctx.lineWidth=1; ctx.strokeRect(52,52,W-104,H-104);
-  // ラベル
+  // 日付＋ラベル（見返した時に「いつの記録か」が一目で分かるように、日付を上に）
+  drawSpaced(ctx,LAST.date,W/2,78,22,'"Shippori Mincho"',"rgba(29,26,21,.45)",6);
   drawSpaced(ctx,"いまの こころ",W/2,122,30,'"Shippori Mincho"',"rgba(176,58,32,.85)",14);
   // 題（縦書き三列：主軸 / のなかの / 副軸）
   const p=POET[LAST.p], s=POET[LAST.s];
@@ -1434,24 +1465,37 @@ function saveFuda(){
 }
 async function shareFuda(){
   const src=document.getElementById("fuda").src;
-  const text=`いまのこころ：『${LAST.title}』 #墨詠み`;
+  const text=`いまのこころ：『${LAST.title}』\n#墨詠み で、こころの見立てをもらいました\n${APP_URL}`;
+  track("share-ig");
   try{
     const blob=await(await fetch(src)).blob();
     const file=new File([blob],"sumiyomi.png",{type:"image/png"});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
+      /* 共有シートを開くとInstagramも選択肢に出る。選ぶとストーリーズ/投稿の選択画面がこの画像入りで開く */
       await navigator.share({files:[file],text});return;
     }
   }catch(e){}
+  alert("この端末では直接シェアできないみたい。札を保存して、Instagramアプリから投稿してね");
   saveFuda();
 }
 function shareX(){
   const words=LAST.words.map(t=>"「"+t+"」").join("");
   track("share-x");
-  const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\n墨が、あなたのこころを詠む #墨詠み`;
+  const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて #墨詠み`;
   window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(APP_URL),"_blank");
 }
+function shareLine(){
+  const words=LAST.words.map(t=>"「"+t+"」").join("");
+  track("share-line");
+  const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて\n${APP_URL}`;
+  window.open("https://line.me/R/msg/text/?"+encodeURIComponent(text),"_blank");
+}
+function retryGarden(){
+  document.getElementById("overlay").classList.remove("active");
+  startGarden();
+}
 function shareApp(){
-  const text="墨詠み — 半紙に墨が落ち、庭がひらく。言の葉を三つ拾うと、墨があなたのこころを詠みます。";
+  const text="墨詠み — なんとなくもやもやする日に、半紙に墨が落ちて庭がひらく。言の葉を三つ拾うと、墨があなたのこころを言い当てます。";
   if(navigator.share){ navigator.share({title:"墨詠み",text,url:APP_URL}); }
   else{ navigator.clipboard.writeText(text+"\n"+APP_URL).then(()=>alert("紹介文をコピーしました")); }
 }
