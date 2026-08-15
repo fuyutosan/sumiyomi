@@ -1457,9 +1457,24 @@ async function makeFuda(){
   document.getElementById("fuda").src=url;
   document.getElementById("overlay").classList.add("active");
 }
-function saveFuda(){
+async function saveFuda(){
+  const src=document.getElementById("fuda").src;
+  /* iPhoneはdownload属性だけだとカメラロールに落ちず長押し保存が必要になるので、
+     共有シートを開いて「画像を保存」を選べば一気にカメラロールへ入るこちらを優先する */
+  if(navigator.canShare){
+    try{
+      const blob=await(await fetch(src)).blob();
+      const file=new File([blob],"sumiyomi_"+LAST.title+".png",{type:"image/png"});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file]});
+        return;
+      }
+    }catch(e){
+      if(e&&e.name==="AbortError") return;
+    }
+  }
   const a=document.createElement("a");
-  a.href=document.getElementById("fuda").src;
+  a.href=src;
   a.download="sumiyomi_"+LAST.title+".png";
   a.click();
 }
@@ -1467,14 +1482,21 @@ async function shareFuda(){
   const src=document.getElementById("fuda").src;
   const text=`いまのこころ：『${LAST.title}』\n#墨詠み で、こころの見立てをもらいました\n${APP_URL}`;
   track("share-ig");
-  try{
-    const blob=await(await fetch(src)).blob();
-    const file=new File([blob],"sumiyomi.png",{type:"image/png"});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      /* 共有シートを開くとInstagramも選択肢に出る。選ぶとストーリーズ/投稿の選択画面がこの画像入りで開く */
-      await navigator.share({files:[file],text});return;
+  if(navigator.canShare){
+    try{
+      const blob=await(await fetch(src)).blob();
+      const file=new File([blob],"sumiyomi.png",{type:"image/png"});
+      if(navigator.canShare({files:[file]})){
+        /* 共有シートを開くとInstagramも選択肢に出る。選ぶとストーリーズ/投稿の選択画面がこの画像入りで開く */
+        await navigator.share({files:[file],text});
+        return;
+      }
+    }catch(e){
+      /* iOSは共有先アプリ(Instagram等)が完了を報告しないため、実際は共有できていてもshare()がAbortErrorで
+         reject することがある。この場合は「共有できなかった」と決めつけて保存を強制しない */
+      if(e&&e.name==="AbortError") return;
     }
-  }catch(e){}
+  }
   alert("この端末では直接シェアできないみたい。札を保存して、Instagramアプリから投稿してね");
   saveFuda();
 }
