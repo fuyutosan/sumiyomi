@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Yuji+Syuku&family=Yuji+Boku&display=swap" rel="stylesheet">
-<script data-goatcounter="https://fuyuto.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<script data-goatcounter="https://fuyuto.goatcounter.com/count" async src="https://gc.zgo.at/count.js" onload="window.flushTracks?.()"></script>
 <style>
 :root{
   --paper:#f6f3ea; --paper2:#efebdf;
@@ -700,9 +700,30 @@ const MUSUBI = [
 ];
 
 const APP_URL="https://sumiyomi.pages.dev/";
-/* 計測イベント（ファネル：訪問→結果到達→札作成→シェア） */
+/* 計測イベント（送信に失敗しても体験を止めない） */
+let playEvents=new Set();
+let pendingTracks=[];
 function track(name){
-  if(window.goatcounter&&goatcounter.count) goatcounter.count({path:name,event:true});
+  if(!window.goatcounter||typeof window.goatcounter.count!=="function"){
+    pendingTracks.push(name);
+    return;
+  }
+  try{
+    const sent=window.goatcounter.count({path:name,event:true,no_session:true});
+    if(sent&&typeof sent.catch==="function") sent.catch(()=>{});
+  }catch(e){ /* 計測は補助機能 */ }
+}
+function flushTracks(){
+  const queued=pendingTracks;
+  pendingTracks=[];
+  queued.forEach(track);
+}
+window.flushTracks=flushTracks;
+flushTracks();
+function trackOnce(name){
+  if(playEvents.has(name)) return;
+  playEvents.add(name);
+  track(name);
 }
 const AXES = ["疲","憂","熾","寂","澄","灯","惑","温"];
 const SPLATS = [
@@ -1197,12 +1218,15 @@ setTimeout(()=>{const d=document.getElementById("drop"); if(d) d.classList.add("
 function startGarden(){
   // タイトルから入るときは、文字が墨に溶けて消えてから庭へ
   const ttl=document.getElementById("title");
-  if(ttl.classList.contains("active")&&!ttl.dataset.exited){
+  if(ttl.classList.contains("active")){
+    if(ttl.dataset.exited) return;
     ttl.dataset.exited="1";
     ttl.classList.add("exiting");
-    setTimeout(()=>{startGarden(); ttl.classList.remove("exiting");},520);
+    setTimeout(()=>{ttl.classList.remove("active","exiting"); ttl.dataset.exited=""; startGarden();},520);
     return;
   }
+  playEvents=new Set();
+  trackOnce("play-start");
   score={}; AXES.forEach(a=>score[a]=0);
   picked=[]; answers=[]; qQueue=[]; qIndex=0;
   pool=[...WORDS].sort(()=>Math.random()-.5);
@@ -1253,6 +1277,7 @@ function scheduleDie(el,delay){
 
 function pickWord(w,el){
   if(picked.length>=3||picked.some(p=>p.t===w.t)) return;
+  if(picked.length===0) trackOnce("word-first");
   el.classList.add("chosen");
   clearTimeout(el._die);
   document.querySelectorAll("#field .word:not(.leaving):not(.chosen)").forEach(o=>scheduleDie(o,5200+Math.random()*2600));
@@ -1282,13 +1307,14 @@ function pickWord(w,el){
   const slot=document.getElementById("slot"+(picked.length-1));
   slot.textContent=w.t; slot.classList.add("filled");
   if(picked.length===3){
+    trackOnce("words-complete");
     clearInterval(floatTimer);
     const used=new Set();
     picked.forEach(p=>{
       const top=Object.entries(p.a).sort((x,y)=>y[1]-x[1])[0][0];
       if(!used.has(top)){used.add(top); qQueue.push({word:p.t,axis:top});}
     });
-    setTimeout(()=>{show("question"); renderQuestion();},1300);
+    setTimeout(()=>{show("question"); trackOnce("questions-start"); renderQuestion();},1300);
   }
 }
 
@@ -1317,7 +1343,7 @@ function answer(i){
   answers.push({text,refl});
   for(const[k,v]of Object.entries(add)) score[k]+=v;
   qIndex++;
-  setTimeout(()=>{ if(qIndex<qQueue.length) renderQuestion(); else renderResult(); },180);
+  setTimeout(()=>{ if(qIndex<qQueue.length) renderQuestion(); else { trackOnce("questions-complete"); renderResult(); } },180);
 }
 
 function renderResult(){
@@ -1355,7 +1381,7 @@ function renderResult(){
         <button class="btn" onclick="startGarden()">もう一度 庭へ</button>
       </div>
     </div>`;
-  track("play-result");
+  trackOnce("play-result");
   Oto.rin();
   show("result");
   document.getElementById("result").scrollTop=0;
@@ -1379,7 +1405,7 @@ function drawSpaced(ctx,text,x,y,size,font,color,ls){
 async function makeFuda(){
   if(!LAST) return;
   Oto.stamp();
-  track("make-fuda");
+  trackOnce("make-fuda");
   await Promise.all([
     document.fonts.load('130px "Yuji Boku"'),
     document.fonts.load('60px "Yuji Syuku"'),
@@ -1481,7 +1507,7 @@ async function saveFuda(){
 async function shareFuda(){
   const src=document.getElementById("fuda").src;
   const text=`いまのこころ：『${LAST.title}』\n#墨詠み で、こころの見立てをもらいました\n${APP_URL}`;
-  track("share-ig");
+  trackOnce("share-ig");
   if(navigator.canShare){
     try{
       const blob=await(await fetch(src)).blob();
@@ -1502,13 +1528,13 @@ async function shareFuda(){
 }
 function shareX(){
   const words=LAST.words.map(t=>"「"+t+"」").join("");
-  track("share-x");
+  trackOnce("share-x");
   const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて #墨詠み`;
   window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(APP_URL),"_blank");
 }
 function shareLine(){
   const words=LAST.words.map(t=>"「"+t+"」").join("");
-  track("share-line");
+  trackOnce("share-line");
   const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて\n${APP_URL}`;
   window.open("https://line.me/R/msg/text/?"+encodeURIComponent(text),"_blank");
 }
