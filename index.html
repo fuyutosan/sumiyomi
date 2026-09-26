@@ -29,6 +29,8 @@ body.night{ --paper:#eeece5; --paper2:#e5e3da; --ink:#191713; }
 html,body{height:100%}
 body{
   font-family:"Shippori Mincho",serif;color:var(--ink);
+  /* 日本語の改行：文節の切れ目（BudouX・空白）でだけ折る。はみ出すときだけどこでも折る */
+  word-break:keep-all;overflow-wrap:anywhere;line-break:strict;
   background:radial-gradient(130% 100% at 50% 0%, var(--paper) 60%, var(--paper2) 100%);
   overflow:hidden;position:fixed;inset:0;width:100%;
 }
@@ -286,6 +288,10 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-mitate{border-bottom:1px solid var(--ink-25);padding-bottom:14px;margin-bottom:18px}
 .r-mitate p{line-height:2.05;letter-spacing:.03em;font-size:.95rem;margin-bottom:10px}
 .r-mitate p:last-child{margin-bottom:0}
+.nw{white-space:nowrap}
+.r-pick{display:block;margin:8px 0 0 auto;font:inherit;font-size:.74rem;letter-spacing:.12em;color:var(--ink-70);background:transparent;border:1px solid var(--ink-25);border-radius:2px;padding:4px 12px;cursor:pointer}
+.r-pick[aria-pressed="true"]{color:var(--shu);border-color:var(--shu)}
+.r-pick[aria-pressed="true"]::before{content:"◆ "}
 .r-koe{display:block;color:var(--ink-45);font-size:.8rem;letter-spacing:.05em;margin-bottom:2px}
 .r-ippo{display:block;color:var(--shu);font-size:.7rem;letter-spacing:.45em;margin-bottom:6px}
 .r-hana{text-align:center;color:var(--ink-45);font-size:.72rem;letter-spacing:.5em;margin:14px 0}
@@ -334,6 +340,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
   .yomi{right:6%}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/budoux@0.6.4/bundle/budoux-ja.min.js"></script>
 </head>
 <body>
 <!-- 共有SVGフィルタ -->
@@ -1319,6 +1326,10 @@ function pickWord(w,el){
 }
 
 let curQ=null;
+/* 文章を文節で折れるように包む（BudouX） */
+/* BudouXが単語の途中で区切ってしまう語は、塊のまま折らない（96本を洗い出して見つけた5語） */
+const NOWRAP=/いくつ|ふがいなさ|気持ち|そもそも|ひと山/g;
+const bx=t=>`<budoux-ja>${t.replace(NOWRAP,m=>`<span class="nw">${m}</span>`)}</budoux-ja>`;
 function renderQuestion(){
   const{word,axis}=qQueue[qIndex];
   const pool=QUESTIONS[axis];
@@ -1329,8 +1340,8 @@ function renderQuestion(){
     <div class="q-kanji">${SEAL[axis]}</div>
     <div class="q-word">「${word}」</div>
     <div class="q-progress">問 ${qIndex+1} ／ ${qQueue.length}</div>
-    <div class="q-text">${curQ.q}</div>
-    <div class="q-answers">${curQ.ans.map((a,i)=>`<button class="ans" onclick="answer(${i})">${a[0]}</button>`).join("")}</div>`;
+    <div class="q-text">${bx(curQ.q)}</div>
+    <div class="q-answers">${curQ.ans.map((a,i)=>`<button class="ans" onclick="answer(${i})">${bx(a[0])}</button>`).join("")}</div>`;
 }
 
 function answer(i){
@@ -1353,7 +1364,7 @@ function renderResult(){
   const musubi=MUSUBI[Math.floor(Math.random()*MUSUBI.length)];
   const now=new Date();
   const date=`${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
-  LAST={p,s,title,musubi,words:picked.map(w=>w.t),date};
+  LAST={p,s,title,musubi,words:picked.map(w=>w.t),date,oracles:answers.map(a=>a.refl),oi:0,step:lastSentence(BASE[p].advice)};
   const card=document.getElementById("rcard");
   card.innerHTML=`
     <div class="k-band"></div>
@@ -1362,12 +1373,12 @@ function renderResult(){
         <div class="r-content">
           <div class="r-date">${LAST.date}</div>
           <div class="r-label">いまの こころ</div>
-          <div class="r-mitate">${answers.map(a=>`<p><span class="r-koe">「${a.text}」</span>── ${a.refl}</p>`).join("")}</div>
-          <div class="r-body">${BASE[p].body}</div>
-          <div class="r-pair">${PAIR[p+s]||""}</div>
+          <div class="r-mitate">${answers.map((a,i)=>`<p><span class="r-koe">${bx("「"+a.text+"」")}</span>── ${bx(a.refl)}<button class="r-pick" aria-pressed="${i===0}" onclick="pickOracle(${i})">${i===0?"札に載せる言葉":"この言葉を札に"}</button></p>`).join("")}</div>
+          <div class="r-body">${bx(BASE[p].body)}</div>
+          <div class="r-pair">${bx(PAIR[p+s]||"")}</div>
           <div class="r-hana">❖</div>
-          <div class="r-words">${picked.map(w=>`<div class="r-wline"><span class="r-wname">${w.t}</span><span class="r-wc">${w.c}</span></div>`).join("")}</div>
-          <div class="r-advice"><span class="r-ippo">今日の一歩</span>${BASE[p].advice}</div>
+          <div class="r-words">${picked.map(w=>`<div class="r-wline"><span class="r-wname">${w.t}</span><span class="r-wc">${bx(w.c)}</span></div>`).join("")}</div>
+          <div class="r-advice"><span class="r-ippo">今日の一歩</span>${bx(BASE[p].advice)}</div>
           <div class="r-musubi">${musubi}</div>
         </div>
         <div class="r-rail">
@@ -1402,83 +1413,172 @@ function drawSpaced(ctx,text,x,y,size,font,color,ls){
   let cx=x-total/2;
   [...text].forEach((ch,i)=>{ ctx.textAlign="left"; ctx.fillText(ch,cx,y); cx+=widths[i]+ls; });
 }
+/* 札に載せる一言を選ぶ（結果画面のボタン） */
+function pickOracle(i){
+  if(!LAST) return;
+  LAST.oi=i;
+  document.querySelectorAll("#rcard .r-pick").forEach((b,k)=>{
+    b.setAttribute("aria-pressed",k===i); b.textContent=k===i?"札に載せる言葉":"この言葉を札に";
+  });
+}
+function lastSentence(t){
+  const ss=t.split("。").filter(x=>x.trim());
+  return ss[ss.length-1]+"。";
+}
+/* 札の番号：主軸×副軸の56通りに第一番〜第五十六番 */
+function fudaNo(p,s){
+  const others=AXES.filter(a=>a!==p);
+  return AXES.indexOf(p)*7+others.indexOf(s)+1;
+}
+function kanjiNum(n){
+  const d=["","一","二","三","四","五","六","七","八","九"];
+  if(n<10) return d[n];
+  return (n>=20?d[Math.floor(n/10)]:"")+"十"+d[n%10];
+}
+function kanjiDate(){
+  const n=new Date(), d="〇一二三四五六七八九";
+  const y=[...String(n.getFullYear())].map(c=>d[c]).join("");
+  return `${y}年 ${kanjiNum(n.getMonth()+1)}月${kanjiNum(n.getDate())}日`;
+}
+/* 文節に区切る（BudouX。読み込めないときは句読点で区切る） */
+let _budoux=null;
+async function phrases(t){
+  try{
+    if(!_budoux){ const m=await import("https://cdn.jsdelivr.net/npm/budoux@0.6.4/+esm"); _budoux=m.loadDefaultJapaneseParser(); }
+    return _budoux.parse(t);
+  }catch(e){
+    return t.split(/(?<=[、。])/).filter(Boolean);
+  }
+}
+const isPunc=ch=>"、。".includes(ch);
+/* 縦書き一列の高さ（句読点は詰める） */
+function vLen(t,size,gap){ return [...t].reduce((a,ch)=>a+(isPunc(ch)?size*.45:size+gap),0); }
+/* 縦書き（句読点は右上に寄せる） */
+function vtextP(ctx,t,x,y,size,font,color,gap){
+  ctx.save(); ctx.font=size+"px "+font; ctx.fillStyle=color; ctx.textAlign="center"; ctx.textBaseline="top";
+  let cy=y;
+  for(const ch of t){
+    if(isPunc(ch)) ctx.fillText(ch,x+size*.55,cy-size*.55); else ctx.fillText(ch,x,cy);
+    cy+=isPunc(ch)?size*.45:size+gap;
+  }
+  ctx.restore(); return cy;
+}
+/* 託宣を列に詰める：まず文節を切らずに収まる最大の文字サイズを探し、
+   どのサイズでも無理なときだけ文節の中で折る（句読点は列の頭に置かない） */
+function packOracle(ph,maxW,maxH){
+  const tryPack=(size,allowBreak)=>{
+    const gap=4, colW=Math.round(size*1.42), maxCols=Math.floor(maxW/colW);
+    const cols=[]; let cur="";
+    const push=()=>{ if(cur) cols.push(cur); cur=""; };
+    for(const w of ph){
+      if(vLen(cur+w,size,gap)<=maxH){ cur+=w; continue; }
+      push();
+      if(vLen(w,size,gap)<=maxH){ cur=w; continue; }
+      if(!allowBreak) return null;
+      // 文節の中で折るときは、自然な切れ目（「です・ます」の前／助詞の後ろ）を選ぶ
+      let rest=w;
+      while(vLen(rest,size,gap)>maxH){
+        const cs=[...rest]; let cut=-1;
+        for(let i=cs.length-1;i>0;i--){
+          if(vLen(cs.slice(0,i).join(""),size,gap)>maxH||isPunc(cs[i])) continue;
+          const tail=cs.slice(i).join("");
+          if(/^(です|ます|でし|まし)/.test(tail)||"のてにをはがもとで".includes(cs[i-1])){ cut=i; break; }
+        }
+        if(cut<0) for(let i=cs.length-1;i>0;i--){ if(!isPunc(cs[i])&&vLen(cs.slice(0,i).join(""),size,gap)<=maxH){ cut=i; break; } }
+        cols.push(cs.slice(0,cut).join("")); rest=cs.slice(cut).join("");
+      }
+      cur=rest;
+    }
+    push();
+    return cols.length<=maxCols?{cols,size,gap,colW}:null;
+  };
+  // 文節を割らないことを優先（38px＝スマホで約13pxが読める下限）。
+  // それでも入らない文だけ、小さめのサイズで文節の中を折る
+  for(let size=66;size>=38;size-=2){ const r=tryPack(size,false); if(r) return r; }
+  for(let size=46;size>=34;size-=2){ const r=tryPack(size,true); if(r) return r; }
+  return null;
+}
 async function makeFuda(){
   if(!LAST) return;
   Oto.stamp();
   trackOnce("make-fuda");
   await Promise.all([
-    document.fonts.load('130px "Yuji Boku"'),
-    document.fonts.load('60px "Yuji Syuku"'),
-    document.fonts.load('32px "Shippori Mincho"'),
+    document.fonts.load('140px "Yuji Boku"'),
+    document.fonts.load('64px "Yuji Syuku"'),
+    document.fonts.load('34px "Shippori Mincho"'),
   ]);
-  const W=1080,H=1350;
-  const cv=document.createElement("canvas"); cv.width=W; cv.height=H;
+  // 紙だけの画像（黒い台なし）。ストーリーで拡大してもぼやけないよう1.5倍で描く
+  const W=660,H=1680,SC=1.5, INK="#1d1a15", RED="#b03a20", REDA="rgba(176,58,32,.85)";
+  const cv=document.createElement("canvas"); cv.width=W*SC; cv.height=H*SC;
   const ctx=cv.getContext("2d");
-  const INK="#1d1a15";
-  // 半紙
-  const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,"#f8f5ec"); g.addColorStop(1,"#efebde");
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // 繊維の斑
-  for(let i=0;i<130;i++){
-    ctx.fillStyle="rgba(29,26,21,"+(0.015+Math.random()*0.03)+")";
-    const x=Math.random()*W, y=Math.random()*H;
-    ctx.fillRect(x,y,1+Math.random()*2, .6+Math.random()*1.2);
-  }
-  // 題の後ろの滲み
-  let rg=ctx.createRadialGradient(W/2,430,40,W/2,430,430);
-  rg.addColorStop(0,"rgba(29,26,21,.10)"); rg.addColorStop(.55,"rgba(29,26,21,.045)"); rg.addColorStop(1,"rgba(29,26,21,0)");
-  ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(W/2,430,430,0,7); ctx.fill();
-  // 遠山（下部の水墨）
-  ctx.fillStyle="rgba(29,26,21,.07)";
-  ctx.beginPath(); ctx.moveTo(0,1195);
-  ctx.bezierCurveTo(180,1130,320,1090,470,1120);
-  ctx.bezierCurveTo(620,1150,700,1195,860,1185);
-  ctx.bezierCurveTo(960,1179,1030,1160,1080,1150);
-  ctx.lineTo(1080,1350); ctx.lineTo(0,1350); ctx.closePath(); ctx.fill();
-  ctx.fillStyle="rgba(29,26,21,.11)";
-  ctx.beginPath(); ctx.moveTo(0,1255);
-  ctx.bezierCurveTo(200,1215,360,1200,540,1222);
-  ctx.bezierCurveTo(730,1245,880,1268,1080,1252);
-  ctx.lineTo(1080,1350); ctx.lineTo(0,1350); ctx.closePath(); ctx.fill();
-  // 枠（二重の墨罫）
-  ctx.strokeStyle="rgba(29,26,21,.55)"; ctx.lineWidth=3; ctx.strokeRect(38,38,W-76,H-76);
-  ctx.strokeStyle="rgba(29,26,21,.25)"; ctx.lineWidth=1; ctx.strokeRect(52,52,W-104,H-104);
-  // 日付＋ラベル（見返した時に「いつの記録か」が一目で分かるように、日付を上に）
-  drawSpaced(ctx,LAST.date,W/2,78,22,'"Shippori Mincho"',"rgba(29,26,21,.45)",6);
-  drawSpaced(ctx,"いまの こころ",W/2,122,30,'"Shippori Mincho"',"rgba(176,58,32,.85)",14);
-  // 題（縦書き三列：主軸 / のなかの / 副軸）
-  const p=POET[LAST.p], s=POET[LAST.s];
-  const size=(t)=>t.length<=2?150:(t.length===3?128:108);
-  drawV(ctx,p,W/2+195,215,size(p),'"Yuji Boku"',INK,10);
-  drawV(ctx,"のなかの",W/2,300,52,'"Yuji Boku"',"rgba(29,26,21,.45)",14);
-  drawV(ctx,s,W/2-195,215,size(s),'"Yuji Boku"',INK,10);
-  // 短冊（拾った三語）
-  const tz=[W/2-260,W/2,W/2+260];
-  LAST.words.forEach((wd,i)=>{
-    const x=tz[i], top=800, wdt=122, hgt=68*wd.length+70;
-    ctx.save();
-    ctx.translate(x,0); ctx.rotate((i-1)*0.012);
-    ctx.fillStyle="rgba(249,246,238,.94)";
-    ctx.strokeStyle="rgba(29,26,21,.5)"; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.roundRect(-wdt/2,top,wdt,hgt,3); ctx.fill(); ctx.stroke();
-    ctx.fillStyle="rgba(176,58,32,.85)"; ctx.beginPath(); ctx.arc(0,top+28,5,0,7); ctx.fill();
-    drawV(ctx,wd,0,top+56,60,'"Yuji Syuku"',INK,8);
-    ctx.restore();
+  let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const hs=(t,x,y,size,font,color,ls)=>drawSpaced(ctx,t,x,y,size,font,color,ls);
+  // 細長い紙（少し傾ける）
+  const pw=W,ph=H,px=0,py=0;
+  ctx.save(); ctx.scale(SC,SC);
+  const g=ctx.createLinearGradient(0,py,0,py+ph); g.addColorStop(0,"#f8f5ec"); g.addColorStop(1,"#efe9d8");
+  ctx.fillStyle=g; ctx.fillRect(px,py,pw,ph);
+  for(let i=0;i<260;i++){ ctx.fillStyle=`rgba(29,26,21,${.012+rnd()*.03})`; ctx.fillRect(px+rnd()*pw,py+rnd()*ph,1+rnd()*3,.6+rnd()*1.4); }
+  // 三つ折りの跡
+  [py+ph/3,py+ph*2/3].forEach(fy=>{
+    const f=ctx.createLinearGradient(0,fy-18,0,fy+18);
+    f.addColorStop(0,"rgba(0,0,0,0)"); f.addColorStop(.5,"rgba(0,0,0,.09)"); f.addColorStop(.52,"rgba(255,255,255,.5)"); f.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=f; ctx.fillRect(px,fy-18,pw,36);
   });
+  // 朱の罫
+  ctx.strokeStyle="rgba(176,58,32,.8)"; ctx.lineWidth=4; ctx.strokeRect(px+30,py+30,pw-60,ph-60);
+  ctx.lineWidth=1.5; ctx.strokeRect(px+42,py+42,pw-84,ph-84);
+  // 頭：日付（朱）・御籤名・番号
+  hs(kanjiDate(),W/2,py+70,22,'"Shippori Mincho"',REDA,4);
+  hs("墨詠み御籤",W/2,py+112,34,'"Shippori Mincho"',RED,18);
+  ctx.strokeStyle="rgba(176,58,32,.6)"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px+70,py+150); ctx.lineTo(px+pw-70,py+150); ctx.stroke();
+  hs(`第${kanjiNum(fudaNo(LAST.p,LAST.s))}番`,W/2,py+215,66,'"Yuji Boku"',INK,14);
+  // 題（主軸 / のなかの / 副軸）
+  const cx=W/2, P=POET[LAST.p], S=POET[LAST.s];
+  // 題の文字数に合わせて、一つ目の折り目（託宣の段）を越えない大きさにする
+  const tsize=(t,max)=>Math.min(max,Math.floor(290/[...t].length)-6);
+  vtextP(ctx,P,cx+110,py+270,tsize(P,118),'"Yuji Boku"',INK,6);
+  vtextP(ctx,"のなかの",cx,py+300,40,'"Yuji Boku"',"rgba(29,26,21,.5)",10);
+  vtextP(ctx,S,cx-110,py+270,tsize(S,96),'"Yuji Boku"',INK,6);
+  // 託宣（見出しは朱、中身は黒）
+  const oy=py+ph/3+70;
+  hs("― 託 宣 ―",W/2,oy,32,'"Shippori Mincho"',RED,6);
+  const top=oy+50, bottom=py+ph*2/3-30;
+  const lay=packOracle(await phrases(LAST.oracles[LAST.oi]||""),pw-150,bottom-top);
+  if(lay){
+    const start=cx+lay.colW*(lay.cols.length-1)/2;
+    lay.cols.forEach((t,i)=>vtextP(ctx,t,start-i*lay.colW,top,lay.size,'"Yuji Syuku"',INK,lay.gap));
+  }
+  // 拾った言の葉
+  const by=py+ph*2/3+60;
+  hs("拾った言の葉",W/2,by,30,'"Shippori Mincho"',RED,10);
+  const tz=[cx+180,cx,cx-180];
+  LAST.words.forEach((w,i)=>{
+    ctx.fillStyle="rgba(29,26,21,.7)"; ctx.beginPath(); ctx.arc(tz[i],by+60,5,0,7); ctx.fill();
+    // 言の葉は「今日の一歩」の見出しにかからない長さに収める（縦195pxまで）
+    vtextP(ctx,w,tz[i],by+85,Math.min(64,Math.floor(195/[...w].length)-4),'"Yuji Boku"',INK,4);
+  });
+  // 今日の一歩：文節で折り返す。幅は右下の落款にかからない範囲（中央から左右180px）
+  hs("今日の一歩",W/2,by+300,28,'"Shippori Mincho"',RED,8);
+  const STEP_FONT='"Shippori Mincho"', stepW=360;
+  let stepSize=32, lines;
+  for(;stepSize>=26;stepSize-=2){
+    ctx.font=stepSize+"px "+STEP_FONT;
+    const wOf=t=>ctx.measureText(t).width+2*(t.length-1);
+    lines=[]; let cur="";
+    for(const w of await phrases(LAST.step)){
+      if(!cur||wOf(cur+w)<=stepW){ cur+=w; } else { lines.push(cur); cur=w; }
+    }
+    if(cur) lines.push(cur);
+    if(lines.length<=3&&lines.every(l=>wOf(l)<=stepW)) break;
+  }
+  lines.forEach((l,i)=>hs(l,W/2,by+345+i*42,stepSize,STEP_FONT,INK,2));
   // 落款
-  ctx.save();
-  ctx.translate(920,1160); ctx.rotate(-0.06);
-  ctx.fillStyle="#b03a20";
-  ctx.beginPath(); ctx.roundRect(-55,-55,110,110,10); ctx.fill();
-  ctx.fillStyle="#f8efe3"; ctx.font='64px "Yuji Boku"'; ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(SEAL[LAST.p],0,4);
+  ctx.save(); ctx.translate(px+pw-100,py+ph-100); ctx.rotate(-.06); ctx.fillStyle=RED;
+  ctx.beginPath(); ctx.roundRect(-42,-42,84,84,8); ctx.fill();
+  ctx.fillStyle="#f8efe3"; ctx.font='50px "Yuji Boku"'; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText(SEAL[LAST.p],0,3); ctx.restore();
   ctx.restore();
-  // 結び
-  drawSpaced(ctx,LAST.musubi,W/2,1212,34,'"Yuji Syuku"',"rgba(29,26,21,.7)",8);
-  // 銘＋所在（画像が一人歩きしても住所が残るように）
-  drawSpaced(ctx,"墨詠み",W/2,1252,28,'"Yuji Boku"',"rgba(29,26,21,.6)",12);
-  drawSpaced(ctx,"fuyutosan.github.io/sumiyomi",W/2,1284,20,'"Shippori Mincho"',"rgba(29,26,21,.45)",2);
   const url=cv.toDataURL("image/png");
   document.getElementById("fuda").src=url;
   document.getElementById("overlay").classList.add("active");
