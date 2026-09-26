@@ -44,6 +44,23 @@ body::after{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(120% 105% at 50% 45%, transparent 62%, rgba(29,26,21,.09) 100%);
 }
+/* ===== 水墨画の背景（訪れるたびに4枚から1枚。ChatGPTで生成・2026-09-26） =====
+   縦長の絵なので、スマホは画面いっぱい、横長の画面は絵を切らずに中央へ置き、左右は和紙の地の色でなじませる */
+.bgimg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#eee3d2 center/cover no-repeat;opacity:0;transition:opacity 1.4s ease}
+.bgimg.on{opacity:1}
+@media (min-aspect-ratio:4/5){
+  .bgimg{background-size:auto 100%;
+    -webkit-mask-image:linear-gradient(90deg,transparent calc(50% - 28vh),#000 calc(50% - 20vh),#000 calc(50% + 20vh),transparent calc(50% + 28vh));
+            mask-image:linear-gradient(90deg,transparent calc(50% - 28vh),#000 calc(50% - 20vh),#000 calc(50% + 20vh),transparent calc(50% + 28vh))}
+}
+body.dusk .bgimg{filter:sepia(.12) brightness(.98)}
+body.night .bgimg{filter:brightness(.9) contrast(1.05)}
+/* 絵を敷いたら、元の遠山と石庭の線画は重なるので隠す（霞の流れは残す） */
+body.has-bg .yama,body.has-bg .sekitei{display:none}
+/* 最初の画面は絵をそのまま見せ、言葉を選ぶ・問い・結果では絵を薄くして言葉を主役にする */
+body[data-screen="garden"] .bgimg.on,body[data-screen="question"] .bgimg.on,body[data-screen="result"] .bgimg.on{opacity:.42}
+body.has-bg .word{text-shadow:0 0 1px var(--ink-70),0 0 10px var(--paper),0 0 18px var(--paper)}
+body.has-bg .okuru,body.has-bg .roma,body.has-bg .subtitle{text-shadow:0 0 8px var(--paper),0 0 14px var(--paper)}
 /* ===== 水墨の遠山 ===== */
 .yama{position:fixed;left:0;right:0;top:-4%;height:24vh;width:100%;z-index:0;pointer-events:none;
   -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 96%);mask-image:linear-gradient(180deg,#000 55%,transparent 96%)}
@@ -64,17 +81,6 @@ body::after{
 .shimi{position:fixed;border-radius:50%;z-index:0;pointer-events:none;filter:blur(14px);background:radial-gradient(circle, var(--ink-12), transparent 70%)}
 .shimi.s1{width:34vw;height:12vh;right:-6%;top:44%;opacity:.5}
 .shimi.s2{width:22vw;height:8vh;left:14%;top:64%;opacity:.4}
-/* 舞う墨の花 */
-.leaf{position:fixed;z-index:1;pointer-events:none;opacity:0;color:var(--ink);animation:fall linear infinite;font-family:serif}
-@keyframes fall{
-  0%{transform:translate(0,-6vh) rotate(0);opacity:0}
-  10%{opacity:.14}
-  90%{opacity:.1}
-  100%{transform:translate(-15vw,106vh) rotate(320deg);opacity:0}
-}
-
-/* 墨流し（水面シミュレーション） */
-#ink{position:fixed;inset:0;z-index:1;pointer-events:none}
 
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:2;opacity:0;pointer-events:none;transition:opacity 1.4s ease}
 .screen.active{opacity:1;pointer-events:auto}
@@ -354,6 +360,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 </svg>
 
 <!-- 遠山（水墨） -->
+<div class="bgimg" id="bgimg" aria-hidden="true"></div>
 <svg class="yama" viewBox="0 0 1200 340" preserveAspectRatio="none">
   <path class="y1" d="M0,340 L0,205 C90,170 150,120 235,135 C310,148 340,205 430,215 C540,227 590,150 690,132 C780,116 850,170 940,185 C1040,202 1110,160 1200,150 L1200,340 Z"/>
   <path class="y2" d="M0,340 L0,255 C120,235 200,180 300,196 C395,211 445,262 560,268 C680,274 740,205 850,196 C960,187 1060,240 1200,232 L1200,340 Z"/>
@@ -380,7 +387,6 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 </svg>
 
 <!-- 墨流しの水面 -->
-<canvas id="ink"></canvas>
 
 <!-- 音の栓（BGM・効果音の切り替えと音量） -->
 <div id="otokit">
@@ -987,138 +993,6 @@ const Oto=(()=>{
   return {wake,toggle,drip,plop,tap,rin,stamp};
 })();
 
-/* ===== 墨流しエンジン（水面のリアルタイムシミュレーション） =====
-   墨の輪（リング）をポリラインとして持ち、各点をノイズ由来の水流＋
-   渦＋ポインタのかき混ぜで毎フレーム移流させる。本物の墨流しと同じ原理。 */
-const Ink=(()=>{
-  const cv=document.getElementById("ink"), ctx=cv.getContext("2d");
-  let W=0,H=0,dpr=1,T=0,last=0,running=true;
-  const mobile=matchMedia("(max-width:600px)").matches;
-  const PTS=mobile?80:110, MAXR=mobile?18:26;
-  const rings=[], vortices=[];
-  const mouse={x:-999,y:-999,vx:0,vy:0,down:false,dist:0};
-  function resize(){
-    dpr=Math.min(window.devicePixelRatio||1,1.5);
-    W=window.innerWidth; H=window.innerHeight;
-    cv.width=W*dpr; cv.height=H*dpr;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-  addEventListener("resize",resize); resize();
-  addEventListener("pointermove",e=>{
-    const nx=e.clientX, ny=e.clientY;
-    if(mouse.x>-999){ mouse.vx=mouse.vx*.6+(nx-mouse.x)*.4; mouse.vy=mouse.vy*.6+(ny-mouse.y)*.4; }
-    if(mouse.down&&mouse.x>-999){
-      /* なぞった軌跡に墨を落とす（60pxごと） */
-      mouse.dist+=Math.hypot(nx-mouse.x,ny-mouse.y);
-      if(mouse.dist>60){ mouse.dist=0; addRing(nx,ny,1,.26); }
-    }
-    mouse.x=nx; mouse.y=ny;
-  },{passive:true});
-  addEventListener("pointerdown",e=>{
-    mouse.down=true; mouse.dist=0;
-    mouse.x=e.clientX; mouse.y=e.clientY;
-    /* 触れた場所に墨と小さな渦 */
-    addRing(e.clientX,e.clientY,1,.3);
-    vortices.push({x:e.clientX,y:e.clientY,s:80+Math.random()*40,dir:Math.random()>.5?1:-1});
-  },{passive:true});
-  addEventListener("pointerup",()=>{mouse.down=false;},{passive:true});
-  addEventListener("pointercancel",()=>{mouse.down=false;},{passive:true});
-  /* 値ノイズ＋fbm（乱流の素） */
-  function h(ix,iy){const n=Math.sin(ix*127.1+iy*311.7)*43758.5453;return n-Math.floor(n);}
-  function sm(t){return t*t*(3-2*t);}
-  function noise(x,y){
-    const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
-    const a=h(ix,iy),b=h(ix+1,iy),c=h(ix,iy+1),d=h(ix+1,iy+1);
-    return a+(b-a)*sm(fx)+(c-a)*sm(fy)+(a-b-c+d)*sm(fx)*sm(fy);
-  }
-  function fbm(x,y){return noise(x,y)*.62+noise(x*2.13+7.7,y*2.13)*.27+noise(x*4.31,y*4.31+3.3)*.11;}
-  const vout={x:0,y:0};
-  function field(px,py){
-    const s=1/250, e=.012;
-    const nx=px*s, ny=py*s+T*.014;
-    /* curl（回転成分）＝非圧縮っぽい流れ */
-    let cx=(fbm(nx,ny+e)-fbm(nx,ny-e))/(2*e);
-    let cy=-(fbm(nx+e,ny)-fbm(nx-e,ny))/(2*e);
-    vout.x=cx*13; vout.y=cy*13;
-    /* 渦 */
-    for(const v of vortices){
-      const dx=px-v.x, dy=py-v.y, d2=dx*dx+dy*dy;
-      const fall=Math.exp(-d2/45000);
-      const inv=1/Math.sqrt(d2+900);
-      vout.x+=-dy*inv*v.s*fall*v.dir;
-      vout.y+= dx*inv*v.s*fall*v.dir;
-    }
-    /* ポインタのかき混ぜ（ドラッグ中は強く・広く効く） */
-    const mdx=px-mouse.x, mdy=py-mouse.y, md2=mdx*mdx+mdy*mdy;
-    const mfall=Math.exp(-md2/(mouse.down?52000:26000));
-    const mpow=mouse.down?5.5:2.2;
-    vout.x+=mouse.vx*mfall*mpow;
-    vout.y+=mouse.vy*mfall*mpow;
-    return vout;
-  }
-  function addRing(x,y,n,alpha){
-    for(let i=0;i<n;i++){
-      if(rings.length>=MAXR) rings.shift();
-      const r0=12+i*20+Math.random()*8;
-      const ring={cx:x,cy:y,age:0,life:20+Math.random()*9,al:(alpha||.3)*(1-i*.13),exp:26+i*7,pts:[]};
-      for(let k=0;k<PTS;k++){
-        const a=k/PTS*Math.PI*2, rr=r0*(1+Math.random()*.05);
-        ring.pts.push({x:x+Math.cos(a)*rr,y:y+Math.sin(a)*rr});
-      }
-      rings.push(ring);
-    }
-  }
-  function drop(x,y){addRing(x,y,2,.22);}
-  function burst(x,y){
-    addRing(x,y,4,.42);
-    vortices.push({x,y,s:130+Math.random()*70,dir:Math.random()>.5?1:-1});
-  }
-  function step(now){
-    if(!running){last=now;requestAnimationFrame(step);return;}
-    const dt=Math.min((now-last)/1000||.016,.033); last=now; T+=dt;
-    mouse.vx*=Math.exp(-dt*3); mouse.vy*=Math.exp(-dt*3);
-    for(let i=vortices.length-1;i>=0;i--){
-      vortices[i].s*=Math.exp(-dt*.85);
-      if(vortices[i].s<2) vortices.splice(i,1);
-    }
-    ctx.clearRect(0,0,W,H);
-    ctx.lineJoin="round";
-    for(let i=rings.length-1;i>=0;i--){
-      const r=rings[i]; r.age+=dt;
-      if(r.age>r.life){rings.splice(i,1);continue;}
-      const expv=r.exp*Math.exp(-r.age*1.15);
-      for(const p of r.pts){
-        const v=field(p.x,p.y);
-        let ox=0,oy=0;
-        if(expv>.5){
-          const ddx=p.x-r.cx, ddy=p.y-r.cy, dl=Math.sqrt(ddx*ddx+ddy*ddy)+.001;
-          ox=ddx/dl*expv; oy=ddy/dl*expv;
-        }
-        p.x+=(v.x+ox)*dt; p.y+=(v.y+oy)*dt;
-      }
-      const aIn=Math.min(1,r.age/.6);
-      const aOut=r.age>r.life-7?(r.life-r.age)/7:1;
-      const a=r.al*aIn*aOut;
-      ctx.beginPath();
-      ctx.moveTo(r.pts[0].x,r.pts[0].y);
-      for(let k=1;k<r.pts.length;k++) ctx.lineTo(r.pts[k].x,r.pts[k].y);
-      ctx.closePath();
-      ctx.strokeStyle="rgba(29,26,21,"+(a*.2)+")"; ctx.lineWidth=3.2; ctx.stroke();
-      ctx.strokeStyle="rgba(29,26,21,"+a+")"; ctx.lineWidth=1.15; ctx.stroke();
-    }
-    requestAnimationFrame(step);
-  }
-  document.addEventListener("visibilitychange",()=>{running=!document.hidden;});
-  requestAnimationFrame(t=>{last=t;requestAnimationFrame(step);});
-  /* ときどき、どこかに墨が落ちる */
-  setInterval(()=>{ if(rings.length<MAXR-4){ drop(Math.random()*W, Math.random()*H*.8+H*.1); if(Math.random()<.5) Oto.drip(.035); } },5200);
-  /* 開幕：題字の下に最初のひと垂らし＋庭の隅にも */
-  setTimeout(()=>drop(W*.5,H*.42),1600);
-  setTimeout(()=>drop(W*.24,H*.3),3200);
-  setTimeout(()=>drop(W*.76,H*.62),4600);
-  return {drop,burst};
-})();
-
 /* ===== 文字の液体化エンジン（WordFX） =====
    言葉ごとに専用のSVG変位フィルタを割り当て、乱流ノイズで
    「煙のように集まって文字になり → 水面で揺らぎ続け → 崩れて墨に溶ける」
@@ -1134,7 +1008,7 @@ const WordFX=(()=>{
     f.setAttribute("width","190%");f.setAttribute("height","190%");
     const t=document.createElementNS(NS,"feTurbulence");
     t.setAttribute("type","fractalNoise");
-    t.setAttribute("baseFrequency","0.012 0.02");
+    t.setAttribute("baseFrequency","0.012 0.035");
     t.setAttribute("numOctaves","2");
     t.setAttribute("seed",String(7+i*13));
     t.setAttribute("result","n");
@@ -1146,40 +1020,50 @@ const WordFX=(()=>{
     b.setAttribute("stdDeviation","0");
     f.appendChild(t);f.appendChild(d);f.appendChild(b);
     defs.appendChild(f);
-    free.push({i,d,b});
+    free.push({i,t,d,b});
   }
   let T=0,last=0;
   function attach(el){
     const slot=free.pop();
     if(!slot){ el.style.opacity=".95"; return null; }
     el.style.filter="url(#wm"+slot.i+")";
-    const a={el,slot,mode:"in",t:0,ph:Math.random()*6.28,dur:1.9,dead:false};
+    const a={el,slot,mode:"in",t:0,ph:Math.random()*6.28,dur:1.6,dead:false,f:parseFloat(getComputedStyle(el).fontSize)/56||.5};
     acts.push(a);
     return a;
   }
   function dissolve(a,fast){
     if(!a||a.mode==="out")return;
-    a.mode="out"; a.t=0; a.dur=fast?0.85:1.9;
+    a.mode="out"; a.t=0; a.dur=fast?1.1:2.4;
   }
   function step(now){
     const dt=Math.min((now-last)/1000||.016,.033); last=now; T+=dt;
     for(let i=acts.length-1;i>=0;i--){
       const a=acts[i]; a.t+=dt;
       let scale=0,blur=0,op=.95;
+      /* 煙がくゆる：揺らぎ（ゆがみ）を主役に、ぼかしは控えめ。
+         出るときは揺らぎが落ち着いて文字にまとまり、消えるときは揺れながら上へ立ちのぼる */
+      const ease=k=>.5-.5*Math.cos(Math.PI*k);
+      const tt=T+a.ph;
+      a.slot.t.setAttribute("baseFrequency",(0.012+0.004*Math.sin(tt*.9+1)).toFixed(4)+" "+(0.035+0.012*Math.sin(tt*1.3)).toFixed(4));
+      let dy=0,dx=0,sy=1;
       if(a.mode==="in"){
-        const k=Math.min(1,a.t/1.5), e=1-Math.pow(1-k,3);
-        scale=88*(1-e)+5; blur=7*(1-e); op=Math.min(.95,k*1.7);
+        const k=Math.min(1,a.t/a.dur), e=ease(k);
+        scale=(6+40*(1-e))*a.f; blur=2.5*(1-e)*a.f; op=.95*e;
+        dy=14*(1-e)*a.f; dx=Math.sin(tt*3)*4*(1-e)*a.f;
         if(k>=1){a.mode="idle";a.t=0;}
       }else if(a.mode==="idle"){
         /* 水面に書かれた文字の揺らぎ（呼吸） */
         scale=5+Math.sin(T*.9+a.ph)*3.4; blur=0; op=.95;
       }else{
-        const k=Math.min(1,a.t/a.dur), e=k*k*k;
-        scale=5+135*e; blur=10*e*k+1; op=.95*(1-k*k);
+        const k=Math.min(1,a.t/a.dur), e=1-Math.pow(1-k,2);
+        scale=(6+62*e)*a.f; blur=3*e*a.f; op=.95*Math.pow(1-k,1.3);
+        dy=-46*e*a.f; dx=Math.sin(tt*2.6)*10*e*a.f; sy=1+.35*e;
         if(k>=1){
           a.el.remove(); free.push(a.slot); acts.splice(i,1); continue;
         }
       }
+      a.el.style.translate=`${dx.toFixed(1)}px ${dy.toFixed(1)}px`;
+      a.el.style.scale=`1 ${sy.toFixed(3)}`;
       a.slot.d.setAttribute("scale",scale.toFixed(1));
       a.slot.b.setAttribute("stdDeviation",blur.toFixed(2));
       a.el.style.opacity=op.toFixed(3);
@@ -1193,6 +1077,7 @@ const WordFX=(()=>{
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  document.body.dataset.screen=id; // 背景の絵の濃さを画面ごとに変えるため
 }
 
 /* 落ちた墨のしずくを消す */
@@ -1207,19 +1092,6 @@ setTimeout(()=>{const d=document.getElementById("drop"); if(d) d.classList.add("
   else if(h>=19||h<5){mode="night";label="宵の庭"}
   if(mode) document.body.classList.add(mode);
   document.getElementById("jikoku").textContent="── "+label+" ──";
-})();
-
-/* 舞う墨の花 */
-(function(){
-  for(let i=0;i<6;i++){
-    const l=document.createElement("div");
-    l.className="leaf"; l.textContent="❋";
-    l.style.fontSize=(9+Math.random()*9)+"px";
-    l.style.left=(5+Math.random()*90)+"%";
-    l.style.animationDuration=(18+Math.random()*18)+"s";
-    l.style.animationDelay=(Math.random()*22)+"s";
-    document.body.appendChild(l);
-  }
 })();
 
 function startGarden(){
@@ -1243,7 +1115,6 @@ function startGarden(){
   if(floatTimer) clearInterval(floatTimer);
   for(let i=0;i<6;i++) spawnWord();
   floatTimer=setInterval(spawnWord, 700);
-  Ink.drop(window.innerWidth*.5, window.innerHeight*.5);
   Oto.wake(); Oto.drip(.08);
 }
 
@@ -1278,7 +1149,7 @@ function scheduleDie(el,delay){
   el._die=setTimeout(()=>{ if(!el.classList.contains("chosen")){
     el.classList.add("leaving");
     WordFX.dissolve(el._fx);
-    if(!el._fx) setTimeout(()=>el.remove(),1900);
+    if(!el._fx) setTimeout(()=>el.remove(),2400);
   } }, delay);
 }
 
@@ -1289,10 +1160,8 @@ function pickWord(w,el){
   clearTimeout(el._die);
   document.querySelectorAll("#field .word:not(.leaving):not(.chosen)").forEach(o=>scheduleDie(o,5200+Math.random()*2600));
   WordFX.dissolve(el._fx,true);
-  if(!el._fx) setTimeout(()=>el.remove(),1000);
-  // 水面が渦を巻く
+  if(!el._fx) setTimeout(()=>el.remove(),1100);
   const rc=el.getBoundingClientRect();
-  Ink.burst(rc.left+rc.width/2, rc.top+rc.height/2);
   Oto.plop();
   // 墨はね＋波紋
   const sp=document.createElementNS("http://www.w3.org/2000/svg","svg");
@@ -1330,6 +1199,21 @@ let curQ=null;
 /* BudouXが単語の途中で区切ってしまう語は、塊のまま折らない（96本を洗い出して見つけた5語） */
 const NOWRAP=/いくつ|ふがいなさ|気持ち|そもそも|ひと山/g;
 const bx=t=>`<budoux-ja>${t.replace(NOWRAP,m=>`<span class="nw">${m}</span>`)}</budoux-ja>`;
+(function pickBackground(){
+  const N=4; let last=-1;
+  try{ last=+localStorage.getItem("sumiyomi-bg"); }catch(e){}
+  let i=Math.floor(Math.random()*N);
+  if(i===last) i=(i+1+Math.floor(Math.random()*(N-1)))%N;
+  try{ localStorage.setItem("sumiyomi-bg",i); }catch(e){}
+  const url=`bg/bg${i+1}.webp`, img=new Image();
+  img.onload=()=>{
+    const el=document.getElementById("bgimg");
+    el.style.backgroundImage=`url(${url})`;
+    document.body.classList.add("has-bg");
+    requestAnimationFrame(()=>el.classList.add("on"));
+  };
+  img.src=url;
+})();
 function renderQuestion(){
   const{word,axis}=qQueue[qIndex];
   const pool=QUESTIONS[axis];
