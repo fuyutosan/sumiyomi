@@ -49,17 +49,28 @@ body::after{
 .bgimg{position:fixed;inset:0;z-index:0;pointer-events:none;background:#eee3d2 center/cover no-repeat;opacity:0;transition:opacity 1.4s ease}
 .bgimg.on{opacity:1}
 @media (min-aspect-ratio:4/5){
-  .bgimg{background-size:auto 100%;
-    -webkit-mask-image:linear-gradient(90deg,transparent calc(50% - 28vh),#000 calc(50% - 20vh),#000 calc(50% + 20vh),transparent calc(50% + 28vh));
-            mask-image:linear-gradient(90deg,transparent calc(50% - 28vh),#000 calc(50% - 20vh),#000 calc(50% + 20vh),transparent calc(50% + 28vh))}
+  /* 横長の画面：絵を幅いっぱいに広げる。絵は上と下に山・岩が寄っているので、上端と下端を揃えて、それぞれを見せる */
+  .bgimg{background-size:100% auto;background-position:50% 0,50% 0}
 }
 body.dusk .bgimg{filter:sepia(.12) brightness(.98)}
 body.night .bgimg{filter:brightness(.9) contrast(1.05)}
-/* 絵を敷いたら、元の遠山と石庭の線画は重なるので隠す（霞の流れは残す） */
-body.has-bg .yama,body.has-bg .sekitei{display:none}
+/* 絵を敷いたら、元の遠山・石庭の線画と、和紙色の霞の帯・しみは絵を覆って邪魔なので隠す */
+body.has-bg .yama,body.has-bg .sekitei,body.has-bg .kasumi,body.has-bg .shimi{display:none}
+/* 動く背景（bg-motion.js）：止まった絵の上に重ねる。描けたら止まった絵は隠す。使えない環境ではこのまま止まった絵が出る */
+#bgmotion{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block;opacity:0;transition:opacity 1.4s ease}
+body.has-motion #bgmotion{opacity:1}
+body.has-motion .bgimg{visibility:hidden}
+/* 横長の画面：キャンバスは画面いっぱいのまま。bg-motion.js が絵を幅に合わせて拡大し、上端と下端に寄せて描く */
 /* 最初の画面は絵をそのまま見せ、言葉を選ぶ・問い・結果では絵を薄くして言葉を主役にする */
-body[data-screen="garden"] .bgimg.on,body[data-screen="question"] .bgimg.on,body[data-screen="result"] .bgimg.on{opacity:.42}
-body.has-bg .word{text-shadow:0 0 1px var(--ink-70),0 0 10px var(--paper),0 0 18px var(--paper)}
+body[data-screen="garden"] .bgimg.on,body[data-screen="garden"].has-motion #bgmotion{opacity:.62}
+body[data-screen="question"] .bgimg.on,body[data-screen="result"] .bgimg.on,body[data-screen="question"].has-motion #bgmotion,body[data-screen="result"].has-motion #bgmotion{opacity:.42}
+body.has-bg .word{text-shadow:0 0 1px var(--ink-70),0 0 8px var(--paper),0 0 16px var(--paper),0 0 26px var(--paper)}
+/* 言葉の下に和紙色のやわらかい台を敷く：背景の絵が濃い所でも、出る・消える途中の言葉が溶けて読めなくなるのを防ぐ */
+body.has-bg .word::before{
+  inset:-14px -10px;
+  background:radial-gradient(ellipse at 50% 50%, rgba(243,237,224,.7), rgba(243,237,224,.42) 46%, rgba(243,237,224,0) 72%);
+  filter:blur(4px);
+}
 body.has-bg .okuru,body.has-bg .roma,body.has-bg .subtitle{text-shadow:0 0 8px var(--paper),0 0 14px var(--paper)}
 /* ===== 水墨の遠山 ===== */
 .yama{position:fixed;left:0;right:0;top:-4%;height:24vh;width:100%;z-index:0;pointer-events:none;
@@ -347,6 +358,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/budoux@0.6.4/bundle/budoux-ja.min.js"></script>
+<script src="bg-motion.js?v=20261001e" defer></script>
 </head>
 <body>
 <!-- 共有SVGフィルタ -->
@@ -1211,6 +1223,9 @@ const bx=t=>`<budoux-ja>${t.replace(NOWRAP,m=>`<span class="nw">${m}</span>`)}</
     el.style.backgroundImage=`url(${url})`;
     document.body.classList.add("has-bg");
     requestAnimationFrame(()=>el.classList.add("on"));
+    // 動く背景：bg-motion.js の読み込みが終わってから始める（使えなければ止まった絵のまま）
+    const go=()=>{ if(window.BgMotion) window.BgMotion.start(i+1); };
+    if(document.readyState==="complete") go(); else addEventListener("load",go,{once:true});
   };
   img.src=url;
 })();
