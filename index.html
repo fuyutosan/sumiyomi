@@ -12,6 +12,21 @@
 <meta property="og:image" content="https://sumiyomi.pages.dev/ogp.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://sumiyomi.pages.dev/ogp.png">
+<script>
+/* 背景の絵を最初に決めて、ページ本体を読み終える前に取り寄せ始める（下の pickBackground がこの番号を使う） */
+(function(){
+  const N=4; let last=-1;
+  try{ last=+localStorage.getItem("sumiyomi-bg"); }catch(e){}
+  let i=Math.floor(Math.random()*N);
+  if(i===last) i=(i+1+Math.floor(Math.random()*(N-1)))%N;
+  try{ localStorage.setItem("sumiyomi-bg",i); }catch(e){}
+  window.SUMI_BG=i;
+  const MOTION={2:["bg2_plate","bg2_grass","bg2_bend"],3:["bg3_plate","bg3_mask","bg3_flow","bg3_grass","bg3_bend"]};
+  const pre=(name,hi)=>{ const l=document.createElement("link"); l.rel="preload"; l.as="image"; l.href=`bg/${name}.webp`; if(hi) l.fetchPriority="high"; document.head.appendChild(l); };
+  pre(`bg${i+1}`,true);
+  (MOTION[i+1]||[]).forEach(n=>pre(n,false));
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Yuji+Syuku&family=Yuji+Boku&display=swap" rel="stylesheet">
@@ -1212,11 +1227,7 @@ let curQ=null;
 const NOWRAP=/いくつ|ふがいなさ|気持ち|そもそも|ひと山/g;
 const bx=t=>`<budoux-ja>${t.replace(NOWRAP,m=>`<span class="nw">${m}</span>`)}</budoux-ja>`;
 (function pickBackground(){
-  const N=4; let last=-1;
-  try{ last=+localStorage.getItem("sumiyomi-bg"); }catch(e){}
-  let i=Math.floor(Math.random()*N);
-  if(i===last) i=(i+1+Math.floor(Math.random()*(N-1)))%N;
-  try{ localStorage.setItem("sumiyomi-bg",i); }catch(e){}
+  const i=window.SUMI_BG; // 番号は <head> で決めて取り寄せ済み
   const url=`bg/bg${i+1}.webp`, img=new Image();
   img.onload=()=>{
     const el=document.getElementById("bgimg");
