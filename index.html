@@ -132,6 +132,7 @@
   --paper:#f6f3ea; --paper2:#efebdf;
   --ink:#1d1a15; --ink-70:rgba(29,26,21,.7); --ink-45:rgba(29,26,21,.45); --ink-25:rgba(29,26,21,.25); --ink-12:rgba(29,26,21,.12);
   --shu:#b03a20;
+  --ink-soft:#6b675f; /* 小さな補助の文字（時刻・日付・答えの引用・読み）。紙に対して4.7:1以上。ink-45 は2.8:1で小さな文字には薄すぎる */
   --mist:250,247,239; /* 問いの画面の霞の色（rgba(var(--mist),濃さ) で使う） */
   /* 筆の下線3種・円相・落款の四角（第7回：問いの選択肢と拾い枠。色は background、形は mask で切り抜く） */
   --sumi-brush1:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 24' preserveAspectRatio='none'%3E%3Cfilter id='k' x='-5%25' y='-20%25' width='110%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.9' numOctaves='2' seed='3' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 0 0 0 -0.55' result='m'/%3E%3CfeComposite in='SourceGraphic' in2='m' operator='in' result='c'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08' numOctaves='1' seed='10' result='w'/%3E%3CfeDisplacementMap in='c' in2='w' scale='2.2'/%3E%3C/filter%3E%3Cpath filter='url(%23k)' d='M6.0 8.3C8.7 6.7 16.8 6.3 22.2 5.9C27.6 5.6 32.9 6.0 38.3 6.1C43.7 6.1 49.1 6.1 54.5 6.2C59.9 6.2 65.3 6.2 70.7 6.2C76.1 6.2 81.4 6.2 86.8 6.1C92.2 6.1 97.6 6.1 103.0 6.0C108.4 6.0 113.8 5.9 119.2 5.8C124.6 5.8 129.9 5.7 135.3 5.6C140.7 5.6 146.1 5.5 151.5 5.4C156.9 5.3 162.3 5.3 167.7 5.2C173.1 5.2 178.4 5.1 183.8 5.1C189.2 5.1 194.6 5.0 200.0 5.0C205.4 5.0 210.8 5.1 216.2 5.1C221.6 5.1 226.9 5.2 232.3 5.3C237.7 5.3 243.1 5.4 248.5 5.5C253.9 5.6 259.3 5.8 264.7 5.9C270.1 6.0 275.4 6.1 280.8 6.3C286.2 6.4 291.6 6.6 297.0 6.7C302.4 6.9 307.8 7.0 313.2 7.2C318.6 7.3 323.9 7.4 329.3 7.6C334.7 7.7 340.1 7.8 345.5 7.9C350.9 8.0 356.3 8.1 361.7 8.2C367.1 8.3 372.4 8.4 377.8 8.5C383.2 8.6 391.3 8.6 394.0 8.8C396.7 9.0 396.7 9.6 394.0 9.8C391.3 10.0 383.2 9.9 377.8 10.0C372.4 10.1 367.1 10.1 361.7 10.2C356.3 10.2 350.9 10.3 345.5 10.4C340.1 10.5 334.7 10.6 329.3 10.7C323.9 10.8 318.6 11.0 313.2 11.1C307.8 11.3 302.4 11.4 297.0 11.6C291.6 11.7 286.2 11.9 280.8 12.0C275.4 12.2 270.1 12.4 264.7 12.5C259.3 12.7 253.9 12.9 248.5 13.0C243.1 13.2 237.7 13.3 232.3 13.4C226.9 13.6 221.6 13.7 216.2 13.8C210.8 13.9 205.4 14.0 200.0 14.1C194.6 14.2 189.2 14.3 183.8 14.3C178.4 14.4 173.1 14.4 167.7 14.5C162.3 14.6 156.9 14.6 151.5 14.7C146.1 14.7 140.7 14.8 135.3 14.8C129.9 14.9 124.6 15.0 119.2 15.0C113.8 15.1 108.4 15.2 103.0 15.3C97.6 15.4 92.2 15.5 86.8 15.7C81.4 15.8 76.1 15.9 70.7 16.1C65.3 16.3 59.9 16.5 54.5 16.6C49.1 16.8 43.7 17.0 38.3 17.2C32.9 17.4 27.6 18.1 22.2 17.9C16.8 17.7 8.7 17.6 6.0 16.0C3.3 14.4 3.3 10.0 6.0 8.3Z'/%3E%3C/svg%3E");
@@ -142,7 +143,7 @@
 }
 body.dawn { --paper:#f8f2e5; --paper2:#f1e9d8; }
 body.dusk { --paper:#f4eede; --paper2:#ece3cd; }
-body.night{ --paper:#eeece5; --paper2:#e5e3da; --ink:#191713; --mist:243,241,234; }
+body.night{ --paper:#eeece5; --paper2:#e5e3da; --ink:#191713; --ink-soft:#66625a; --mist:243,241,234; }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
@@ -271,7 +272,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 }
 #title.exiting svg.enso,#title.exiting .stain{opacity:0;transition:opacity .5s}
 @keyframes tokeru{to{opacity:0;filter:blur(10px);transform:translateY(-6px)}}
-.yomi{position:absolute;right:12%;top:20%;writing-mode:vertical-rl;color:var(--ink-45);font-size:.85rem;letter-spacing:.6em;animation:nijimu 2s ease 3.2s both}
+.yomi{position:absolute;right:12%;top:20%;writing-mode:vertical-rl;color:var(--ink-soft);font-size:.85rem;letter-spacing:.6em;animation:nijimu 2s ease 3.2s both}
 .rakkan{
   position:absolute;bottom:14%;left:20%;width:38px;height:38px;border-radius:5px;
   background:var(--shu);color:#f8efe3;display:flex;align-items:center;justify-content:center;
@@ -302,7 +303,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 #title .btn{margin-top:30px;animation:nijimu 2s ease 3.6s both}
 /* 「書かずに、約2分。登録なし。」リード文より一段小さく・やや薄い墨（台を含めた実測で4.5:1以上）。折り返さず1行 */
 .roma{margin-top:14px;color:rgba(29,26,21,.68);font-size:clamp(.78rem,2.7vw,.9rem);letter-spacing:.18em;text-indent:.18em;white-space:nowrap;text-align:center;animation:nijimu 2.2s ease 3.4s both}
-.jikoku{margin-top:12px;color:var(--ink-45);font-size:.75rem;letter-spacing:.45em;animation:nijimu 2s ease 4s both}
+.jikoku{margin-top:12px;color:var(--ink-soft);font-size:.75rem;letter-spacing:.45em;animation:nijimu 2s ease 4s both}
 .okuru{margin-top:20px;background:none;border:none;color:var(--ink-70);font-family:inherit;font-size:.82rem;letter-spacing:.2em;cursor:pointer;border-bottom:1px solid var(--ink-25);padding-bottom:3px;animation:nijimu 2s ease 4.2s both}
 .okuru:hover{color:var(--shu);border-color:var(--shu)}
 /* ===== 音の栓 ===== */
@@ -539,7 +540,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
   -webkit-mask:var(--sumi-seal) no-repeat center/100% 100%;mask:var(--sumi-seal) no-repeat center/100% 100%;
 }
 .r-pick:focus-visible{outline:1.5px solid var(--ink-45);outline-offset:2px}
-.r-koe{display:block;color:var(--ink-45);font-size:.8rem;letter-spacing:.05em;margin-bottom:2px}
+.r-koe{display:block;color:var(--ink-soft);font-size:.8rem;letter-spacing:.05em;margin-bottom:2px}
 .r-wd{font-size:.72rem;letter-spacing:.2em;margin-right:.1em}
 /* 冒頭の平たい一言（1段目）と、核心の見立て（2段目）。詩（右の題と本文）はこの後に読む */
 .r-plain{font-size:1.32rem;line-height:1.75;letter-spacing:.06em;color:var(--ink);margin:0 0 10px}
@@ -556,7 +557,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 /* 三つに通う糸の一文：本文（.r-body）の直前に1つ。本文と同じ大きさ・やや薄い墨・斜体にはしない */
 .r-thread{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70);margin-bottom:10px}
 /* 拾った言葉の読み：各見立ての直後に小さく1行（#66625a は紙色に対して約5:1）。核心の見立てはやや大きく */
-.r-wread{display:block;margin-top:2px;font-size:.76rem;line-height:1.8;letter-spacing:.02em;color:#66625a}
+.r-wread{display:block;margin-top:2px;font-size:.76rem;line-height:1.8;letter-spacing:.02em;color:var(--ink-soft)}
 .r-core .r-wread{font-size:.8rem}
 /* 問いのなかった言葉だけ、本文の後ろに「語｜読み」で残す */
 .r-words{margin:16px 0}
@@ -566,7 +567,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 /* 今日の一歩：灰色の箱をやめ、朱の細い罫（上）と余白で見せる。見出しは朱の小さな字（.r-ippo） */
 .r-advice{border-top:1px solid rgba(176,58,32,.6);padding-top:14px;margin:26px 0 14px;line-height:1.9;letter-spacing:.02em;font-size:.95rem}
 .r-musubi{text-align:center;font-family:"Yuji Syuku",serif;letter-spacing:.2em;color:var(--ink-70);font-size:1.05rem;line-height:2;margin:6px 0 2px}
-.r-date{font-family:"Shippori Mincho",serif;letter-spacing:.15em;color:var(--ink-45);font-size:.78rem;margin-bottom:6px}
+.r-date{font-family:"Shippori Mincho",serif;letter-spacing:.15em;color:var(--ink-soft);font-size:.78rem;margin-bottom:6px}
 .r-btns{display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap}
 .r-btns .btn{padding:12px 26px;font-size:.92rem}
 /* 心の安全：重いときだけ出す案内（墨の細い線の囲み。本文と同じ大きさ）／いつも出す一行（#66625a は紙色に対して約5:1） */
