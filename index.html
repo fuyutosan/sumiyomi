@@ -925,6 +925,20 @@ const POET = {疲:"凪",憂:"遠雷",熾:"熾火",寂:"月影",澄:"澄み水",�
 const SEAL = {疲:"凪",憂:"雷",熾:"火",寂:"月",澄:"水",灯:"灯",惑:"霧",温:"陽"};
 /* 結果の冒頭の一言に使う、平たい言葉の名前（詩の名前の裏側） */
 const PLAIN = {疲:"疲れ",憂:"不安",熾:"苛立ち",寂:"寂しさ",澄:"静けさ",灯:"期待",惑:"迷い",温:"あたたかさ"};
+/* 主軸の問いに逃げ道の答え（加点なし。「疲れはそれほどでもない」など）を選んだのに、拾った語のせいで主軸がそのままのときの本文。
+   今の本文（BASE.body）は主軸の気持ちを言い切るので、本人の答えと逆になる。答えは見立ての一覧ですでに受け止めているので、ここでは答えに触れず言い切らない。
+   末尾の一文は、本当はつらいのに打ち消している人への扉（言葉と心の安全の係・第9回） */
+const SOFT = {
+  疲:"名前がつくほどではない重さも、少しずつ積もるものです。今日のうちにひとつ下ろしておくと、明日が少し軽くなります。",
+  憂:"遠くで何かが鳴っている気がしても、耳を澄ませるのは、近づいてきたと感じてからでかまいません。",
+  熾:"胸の奥が静かな日は、無理に何かを燃やさなくてかまいません。いまは、急いで火をおこさなくていい時間です。",
+  寂:"ひとりでいることと、寂しいことは、別のものです。今日のひとりの時間は、そのまま過ごしてかまいません。",
+  澄:"静かかどうかは、いまのあなたにしかわかりません。名前をつけずに、そのまま置いておいてかまいません。",
+  灯:"灯りは、点ける前の時間がいちばん長いものです。いまは、その静かな時間のなかにいます。",
+  惑:"霧は、急いで晴らさなくてもかまいません。見えにくい日は、立ち止まっていてもいいのです。",
+  温:"あたたかさに名前をつけるのは、急がなくてかまいません。いまの正直な感じのまま、置いておけばじゅうぶんです。"
+};
+const SOFT_DOOR="あとから違って感じたら、その感じのほうを信じてかまいません。";
 
 /* ===== 主軸の基本文とひとこと（静かに断定する詩人調） ===== */
 const BASE = {
@@ -1748,6 +1762,12 @@ function renderResult(){
   /* 三つに通う糸：拾った語の a と答えの add の軸ごとの合計（＝score）のうち、主軸を除いて最大の軸 x が3以上のときだけ */
   const x=sorted.find(e=>e[0]!==p);
   const thread=x[1]>=3?THREAD[x[0]]:"";
+  /* 主軸の問いに逃げ道の答えを選んだか。選んでいたら、冒頭を「〜の気配と、」（答えが「少し違う」の澄・温は「〜に近い何かと、」）にし、本文を SOFT に、補足（主軸を言い切る）は出さない */
+  const deny=answers.some(a=>a.axis===p&&Object.keys(a.add||{}).length===0);
+  const near=p==="澄"||p==="温";
+  const plainHead=!deny?`<span class="nw">${PLAIN[p]}と、</span>`
+    :near?`<span class="nw">${PLAIN[p]}に</span><wbr><span class="nw">近い何かと、</span>`
+    :`<span class="nw">${PLAIN[p]}の</span><wbr><span class="nw">気配と、</span>`;
   const calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
   rvCancel();
   /* 題は「間」のあいだだけ一字ずつ包む（上から現れる）。動きを減らす設定のときは今までどおり素の文字 */
@@ -1760,12 +1780,12 @@ function renderResult(){
         <div class="r-content">
           <div class="r-date">${LAST.date}</div>
           <div class="r-label">いまの こころ</div>
-          <div class="r-plain"><span class="nw">${PLAIN[p]}と、</span><wbr>${PLAIN[s].length>=5?`少しの<wbr><span class="nw">${PLAIN[s]}。</span>`:`<span class="nw">少しの${PLAIN[s]}。</span>`}</div>
+          <div class="r-plain">${plainHead}<wbr>${PLAIN[s].length>=5?`少しの<wbr><span class="nw">${PLAIN[s]}。</span>`:`<span class="nw">少しの${PLAIN[s]}。</span>`}</div>
           <div class="r-core${answers.length>1?"":" last"}">${mitateP(answers[core],core)}</div>
           ${answers.length>1?`<div class="r-mitate">${rest}</div>`:""}
           ${thread?`<div class="r-thread">${bx(thread)}</div>`:""}
-          <div class="r-body">${bx(BASE[p].body)}</div>
-          <div class="r-pair">${bx(PAIR[p+s]||"")}</div>
+          <div class="r-body">${bx(deny?SOFT[p]+SOFT_DOOR:BASE[p].body)}</div>
+          ${deny?"":`<div class="r-pair">${bx(PAIR[p+s]||"")}</div>`}
           ${unasked.length?`<div class="r-words">${unasked.map(w=>`<div class="r-wline"><span class="r-wname">${w.t}</span><span class="r-wc">${bx(w.c)}</span></div>`).join("")}</div>`:""}
           <div class="r-hana">❖</div>
           <div class="r-advice"><span class="r-ippo">今日の一歩</span>${bx(heavy?BASE[p].gentle:BASE[p].advice)}</div>
