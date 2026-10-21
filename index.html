@@ -299,6 +299,12 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .picked-slot.filled{border:1px solid var(--ink-70);background:var(--paper);box-shadow:2px 3px 10px rgba(29,26,21,.16)}
 .picked-slot.filled::before{content:"";position:absolute;top:5px;left:6px;width:5px;height:5px;border-radius:50%;background:var(--shu)}
 #field{position:absolute;inset:0;top:106px;overflow:hidden}
+/* 横長の画面（幅900px以上）：絵は中央の帯だけなので、案内・拾い枠（.garden-header）と言葉の出る範囲（#field）を、絵の帯の幅に合わせて中央へ。言葉が絵の外の無地に漂わない。スマホは変えない
+   絵の帯の幅は画面の「高さ」で決まる（bg-motion.js：画面の高さの約58%に絵の上下が収まる拡大率。帯の幅は高さ900pxで約440〜600px）ので、幅も高さに合わせて 560px（高さ900）〜640px（高さ1032以上）、低い画面では最小420px */
+@media (min-width:900px){
+  .garden-header{width:clamp(420px,62vh,640px)}
+  #field{width:clamp(420px,62vh,640px);margin:0 auto}
+}
 .word{
   position:absolute;font-family:"Yuji Boku","Yuji Syuku",serif;color:var(--ink);
   writing-mode:vertical-rl;letter-spacing:.1em;cursor:pointer;user-select:none;
@@ -399,8 +405,14 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-hana{text-align:center;color:var(--ink-45);font-size:.72rem;letter-spacing:.5em;margin:14px 0}
 .r-body{line-height:1.9;letter-spacing:.02em;font-size:.95rem;margin-bottom:10px}
 .r-pair{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70)}
+/* 行末の1〜2文字だけ残るのを避ける（対応ブラウザだけ効く。効かない所は BudouX の文節折りのまま） */
+.r-body,.r-pair,.r-thread,.r-advice,.r-mitate p,.r-core p{text-wrap:pretty}
 /* 三つに通う糸の一文：本文（.r-body）の直前に1つ。本文と同じ大きさ・やや薄い墨・斜体にはしない */
 .r-thread{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70);margin-bottom:10px}
+/* 拾った言葉の読み：各見立ての直後に小さく1行（#66625a は紙色に対して約5:1）。核心の見立てはやや大きく */
+.r-wread{display:block;margin-top:2px;font-size:.76rem;line-height:1.8;letter-spacing:.02em;color:#66625a}
+.r-core .r-wread{font-size:.8rem}
+/* 問いのなかった言葉だけ、本文の後ろに「語｜読み」で残す */
 .r-words{margin:16px 0}
 .r-wline{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px dotted var(--ink-25);font-size:.88rem;line-height:1.85}
 .r-wname{font-family:"Yuji Syuku",serif;flex:none;min-width:5em;letter-spacing:.1em;font-size:.94rem}
@@ -837,61 +849,61 @@ const BASE = {
 
 /* ===== 主軸×副軸の組み合わせ（56通り・断定の鏡） ===== */
 const PAIR = {
-  疲憂:"疲れの底に、先の見えない不安が沈んでいます。あなたが休めない本当の理由は、からだではなく、心配ごとの方です。",
-  疲熾:"疲れているのに、心のどこかがまだ熱い。頑張りたい気持ちと休みたい気持ちが、あなたの中で綱引きをしています。",
+  疲憂:"疲れの底に、先の見えない不安が沈んでいます。休もうとしても休みきれないのは、からだより先に、心配ごとが目を覚ましているからです。",
+  疲熾:"疲れているのに、心のどこかがまだ熱い。進みたい気持ちと休みたい気持ちが、胸の中で綱引きをしています。",
   疲寂:"その疲れは、ひとりで背負ってきた種類の疲れです。弱音の置き場所を、あなたは長いこと持っていません。",
-  疲澄:"疲れの中に、不思議な静けさがあります。嵐は過ぎています。あなたの庭は、もう荒れていません。",
-  疲灯:"くたびれているのに、灯りは消えていません。それが、あなたの芯の強さです。",
+  疲澄:"疲れの中に、不思議な静けさがあります。嵐は過ぎています。庭はもう、荒れていません。",
+  疲灯:"くたびれているのに、灯りは消えていません。その粘りこそ、あなたの芯の強さです。",
   疲惑:"何に疲れたのか、「なんでだろう」と自分でもまだ掴めていません。正体の見えない疲れが、いちばん重いのです。",
-  疲温:"疲れの奥に、誰かへのやさしさが見えます。あなたは、人を思いやった分だけすり減ってきた人です。",
+  疲温:"疲れの奥に、誰かへのやさしさが見えます。人のそばにいた時間の分だけ、あなたは少しずつすり減ってきたのでしょう。",
   憂疲:"不安の下に、積もった疲れが隠れています。心配が増えるのは、休む時間が足りていないせいかもしれません。",
-  憂熾:"不安と焦りが背中合わせです。「早くしなきゃ」が、あなたの不安を実物より大きく育てています。",
+  憂熾:"不安と焦りが背中合わせです。「早くしなきゃ」と急ぐほど、鼓動まで速くなり、不安の音がよけいに耳につきます。",
   憂寂:"その不安を、あなたはひとりで抱えています。声に出せば半分になる種類の不安です。",
   憂澄:"不安を抱えながら、それを静かに眺める目をあなたは持っています。それは、まぎれもない強さです。",
   憂灯:"不安の向こうに、期待が透けています。怖いのは、望みがあるからです。",
   憂惑:"不安と迷いが、霧のように混ざっています。「なんでこんなに落ち着かないんだろう」の答えは、今日出さなくて大丈夫です。必要なのは「今日決めなくていいこと」の一覧です。",
   憂温:"不安の根っこに、大切な人やものがあります。それは、失いたくないものを持つ人だけの不安です。",
   熾疲:"熱の下で、あなたはかなり消耗しています。火を焚き続けるには薪が要ります。その薪が、もう少ない。",
-  熾憂:"熱の裏に、不安が張り付いています。あなたの怒りは時々、怖さの鎧です。",
-  熾寂:"熱があるのに、分かち合う相手が見当たらない。あなたの火は今、少し寂しい燃え方をしています。",
+  熾憂:"熱の裏に、不安が張り付いています。語気が強くなるとき、その下ではたいてい、怖さが鎧を着ています。",
+  熾寂:"熱があるのに、分かち合う相手が見当たらない。火は今、少し寂しい燃え方をしています。",
   熾澄:"熱いのに、頭のどこかが冷静です。その二枚腰は、あなたの武器です。",
   熾灯:"その熱は、壊すための熱ではなく、始めるための熱です。良い火です。",
   熾惑:"何にイラっとしたのか、熱の向き先がまだ決まっていません。的のない矢は、飛ぶほどに疲れます。",
-  熾温:"怒りの根元に、愛情があります。大切だから、腹が立つ。あなたはそういう人です。",
-  寂疲:"静けさの中に、疲れが沈んでいます。人といるのに疲れて、ひとりが沁みる。あなたは今、その時期にいます。",
-  寂憂:"寂しさが、不安の入り口になりかけています。あなたの心は今、考えごとに向いていません。",
-  寂熾:"寂しさの奥で、小さな火が燻っています。本当は、動き出したいのです。",
+  熾温:"腹が立つのは、軽く扱えないことだからです。熱の先に、愛情が見えています。",
+  寂疲:"静けさの中に、疲れが沈んでいます。人といると消耗して、戸を閉めたあとの部屋が沁みる。そんな時期です。",
+  寂憂:"胸の空白が、不安の入り口になりかけています。いまの頭は、考えごとを進めるのに向いていません。",
+  寂熾:"しんとした部屋の隅で、小さな火が燻っています。本当は、動き出したいのです。",
   寂澄:"その孤独は、澄んでいます。ひとりの時間を味わえるのは、成熟の証です。",
-  寂灯:"寂しさの中に、会いたい顔が浮かんでいます。灯りのある場所を、あなたはもう知っています。",
-  寂惑:"寂しさなのか迷いなのか、「これって何て気持ちなんだろう」と自分でも区別がついていません。名前のない感情は、名前のないままで置いておけます。",
-  寂温:"寂しさは、ぬくもりの記憶がある人にだけ訪れます。あなたは失ったのではなく、持っているのです。",
-  澄疲:"澄んでいますが、それは少し疲れて力の抜けた静けさです。今のあなたには、休息がそのまま効きます。",
+  寂灯:"静まった時間の中に、会いたい顔が浮かんでいます。灯りのある場所を、あなたはもう知っています。",
+  寂惑:"「これって何て気持ちなんだろう」と、寂しさなのか迷いなのか、自分でも区別がついていません。名前のない感情は、名前のないままで置いておけます。",
+  寂温:"思い出すと胸があたたまる顔が、いくつか浮かびます。その温度は今も、あなたの中に残っています。",
+  澄疲:"澄んでいますが、それは少し疲れて力の抜けた静けさです。いまは、休むだけでちゃんと効きます。",
   澄憂:"静かな水面の下に、小さな心配が泳いでいます。その心配が見えていることは、もう半分ほどの手がかりです。",
   澄熾:"静けさの底に、熱があります。凪いだ海ほど、深いところは動いています。",
-  澄寂:"あなたは今、澄んだ孤独の中にいます。この時間は、あとから効いてくる栄養です。",
+  澄寂:"ひとりでいるのに、心細くない。澄んだ孤独です。この時間は、あとから効いてくる栄養です。",
   澄灯:"心が澄んで、灯りも見えています。今が、動きどきです。",
   澄惑:"落ち着いているのに、方角だけが決まっていません。「なんで決められないんだろう」と焦らなくて大丈夫。急ぐ理由にはなりません。",
   澄温:"静けさとぬくもりが、同居しています。今のあなたのそばは、きっと居心地がいい。",
   灯疲:"希望はあるのに、体力が追いついていません。灯を守るために、あなたにまず必要なのは休みです。",
-  灯憂:"期待と不安は、同じ場所から生まれます。あなたの場合、先に消えるのは不安の方です。",
+  灯憂:"期待と不安は、同じ場所から生まれます。この流れなら、先に薄れていくのは不安の方です。",
   灯熾:"灯りが、焚き火になりかけています。勢いは、今がいちばんあります。",
   灯寂:"希望の隣に、少しの心細さがあります。それは、誰かに宣言した瞬間に消える種類の心細さです。",
   灯澄:"希望が、静けさに支えられています。もっとも遠くまで歩ける組み合わせを、あなたは今持っています。",
   灯惑:"灯りは見えているのに、「どっちに進めばいいんだろう」と道がまだ選べていません。ただ、灯りに近い道はもう見えています。",
   灯温:"その希望は、誰かのぬくもりから生まれた希望です。ちゃんと育つ種類のものです。",
-  惑疲:"あなたは迷いすぎて、疲れています。選択肢の多さが、今のあなたの重さです。",
-  惑憂:"迷いが不安を呼び、不安がまた迷いを呼んでいます。その輪の外に、あなたの答えがあります。",
-  惑熾:"迷いの中で、焦りだけが先走っています。焦りは、方位磁針にはなりません。",
-  惑寂:"あなたは、ひとりで迷っています。必要なのは答えではなく、聞いてくれる人です。",
-  惑澄:"迷っていますが、慌ててはいません。あなたは、良い迷い方をしています。",
+  惑疲:"選ぶことが続いて、頭がくたびれています。選択肢の多さが、いまの重さです。",
+  惑憂:"決められない時間が不安を呼び、不安がまた、決められない時間を長くしています。その輪の外に、あなたの答えがあります。",
+  惑熾:"答えが決まらないまま、焦りだけが先走っています。焦りは、方位磁針にはなりません。",
+  惑寂:"ひとりきりで迷う時間は、実際より長く感じられます。いま要るのは答えより、聞いてくれる人です。",
+  惑澄:"迷っていますが、慌ててはいません。足取りの落ち着いた、良い迷い方です。",
   惑灯:"霧の向こうに、灯りがひとつ見えています。方角は、もうほとんど決まっています。",
-  惑温:"「なんでこんなに迷うんだろう」の理由は、誰かを傷つけたくないからです。やさしい人の迷い方です。",
-  温疲:"ぬくもりを配りすぎて、あなた自身が少し品切れです。次にあたためる番なのは、あなたです。",
+  惑温:"選べずにいる背中の後ろに、誰かの顔が見えています。傷つけたくない人がいる、やさしい人の迷い方です。",
+  温疲:"人に手を差し出し続けて、あなた自身の分が少し底をついています。次にいたわられる番なのは、あなたです。",
   温憂:"大切なものがあるからこその心配です。愛情と不安は、よく似た顔をしています。",
-  温熾:"あたたかさの中に、譲れない芯があります。あなたは、やさしいだけの人ではありません。",
-  温寂:"ぬくもりの記憶と、いまの静けさ。あなたの今日は、誰かにお茶を淹れる日に向いています。",
-  温澄:"あたたかく、そして静か。人の話を聞くのに、最高の状態です。",
-  温灯:"ぬくもりが、希望に変わりかけています。それは、誰かに渡した瞬間に完成します。",
+  温熾:"やさしさの奥に、譲れない芯があります。ただ穏やかなだけの人では、ありません。",
+  温寂:"湯気のような思い出と、いまの静けさ。今日は、誰かにお茶を淹れる日に向いています。",
+  温澄:"胸がほぐれていて、そして静か。人の話を聞くのに、最高の状態です。",
+  温灯:"胸の内のほのかな熱が、希望に変わりかけています。それは、誰かに渡した瞬間に完成します。",
   温惑:"誰にどうやさしくすればいいか、迷っています。その迷いごと、もうやさしさです。",
 };
 
@@ -1427,7 +1439,9 @@ let curQ=null;
 /* 文章を文節で折れるように包む（BudouX） */
 /* BudouXが単語の途中で区切ってしまう語は、塊のまま折らない（96本を洗い出して見つけた5語） */
 const NOWRAP=/いくつ|ふがいなさ|気持ち|そもそも|ひと山/g;
-const bx=t=>`<budoux-ja>${t.replace(NOWRAP,m=>`<span class="nw">${m}</span>`)}</budoux-ja>`;
+/* 逆に、BudouXが切らない文節の境目で、長い文節が行に収まらず前の短い文節が1〜2文字だけ孤立する所（幅320の「火を」「声を」「上に」「じゅうぶ|んです」）には、折り返しの余地（wbr）を足す */
+const BREAKOK=/消そうと(?=しない)|だけでも?(?=じゅうぶん|かまい)|(?:せい|の)(?=かもしれません)/g;
+const bx=t=>`<budoux-ja>${t.replace(NOWRAP,m=>`<span class="nw">${m}</span>`).replace(BREAKOK,m=>`${m}<wbr>`)}</budoux-ja>`;
 (function pickBackground(){
   const i=window.SUMI_BG; // 番号は <head> で決めて取り寄せ済み
   const url=`bg/bg${i+1}.webp`, img=new Image();
@@ -1506,13 +1520,61 @@ function inkBloom(){
   rvTimers.push(setTimeout(()=>sv.remove(),900));
 }
 
+/* ===== 孤立行の掃除 =====
+   BudouX の文節折り（文節の途中では折らない）のままだと、短い文節が行頭や行末に1〜2文字だけ残ることがある（幅320の「上に」「火を」、行頭の「。」など）。
+   text-wrap:pretty は最後の行にしか効かず、これは直らない。そこで、1〜2文字だけの行（や、行頭に「。」が来る行）がある段落だけ、右の余白を4pxずつ足して（最大40px）行の長さを縮め、折り返しの位置をずらす。
+   直らなければ元の幅に戻す。画面の幅が変わったとき・フォントが読み終わったときにもやり直す。 */
+const TIDY_SEL=".r-core p,.r-mitate p,.r-thread,.r-body,.r-pair,.r-advice,.r-wread,.r-care p,.r-note";
+function rowSizes(el){
+  const rows=[], rg=document.createRange();
+  const tw=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest("button")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  for(let n;(n=tw.nextNode());){
+    const t=n.textContent;
+    for(let i=0;i<t.length;i++){
+      if(/[\s\u200b]/.test(t[i])) continue;
+      rg.setStart(n,i); rg.setEnd(n,i+1);
+      const r=rg.getClientRects()[0]; if(!r||!r.width) continue;
+      const y=Math.round(r.top+r.height/2), last=rows[rows.length-1];
+      if(last&&Math.abs(last.y-y)<6) last.n++; else rows.push({y,n:1,c:t[i]});
+    }
+  }
+  return rows;
+}
+/* 1〜2文字だけの行、または行頭に来てはいけない字（。、」小書き仮名・長音）で始まる行（最初の行は除く） */
+const NOSTART=/[。、，．）」』〕】？！：・ーぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ々]/;
+const orphanRows=el=>rowSizes(el).filter((r,i)=>r.n<=2||(i>0&&NOSTART.test(r.c))).length;
+function tidyLines(root){
+  root.querySelectorAll(TIDY_SEL).forEach(el=>{
+    el.style.paddingRight="";
+    const first=orphanRows(el);
+    if(!first) return;
+    const base=parseFloat(getComputedStyle(el).paddingRight)||0;
+    let best=0, bestN=first;
+    for(let k=1;k<=10;k++){
+      el.style.paddingRight=(base+k*4)+"px";
+      const n=orphanRows(el);
+      if(n<bestN){ bestN=n; best=k; }
+      if(!n) return;
+    }
+    el.style.paddingRight=best?(base+best*4)+"px":"";
+  });
+}
+let tidyTimer=0;
+addEventListener("resize",()=>{
+  clearTimeout(tidyTimer);
+  tidyTimer=setTimeout(()=>{ if(document.body.dataset.screen==="result") tidyLines(document.getElementById("rcard")); },150);
+});
+
 function renderResult(){
   const sorted=AXES.map(a=>[a,score[a]]).sort((x,y)=>y[1]-x[1]);
   const p=sorted[0][0], s=sorted[1][0];
   const title=`${POET[p]}のなかの${POET[s]}`;
   const core=pickCore(p);
   /* 見立て1つ分：拾った言葉 ─ 「答え」── 見立て ＋ 札に載せるボタン（i＝answers の番号。表示の順番とは別） */
-  const mitateP=(a,i)=>`<p><span class="r-koe"><span class="r-wd nw">${a.word} ─</span> ${bx("「"+a.text+"」")}</span>── ${bx(a.refl)}<button class="r-pick" data-i="${i}" aria-pressed="${i===core}" onclick="pickOracle(${i})">札に載せる</button></p>`;
+  /* 拾った言葉の読み（w.c）：各見立ての直後に小さく1行。問いのなかった言葉だけ、下で「語｜読み」として残す */
+  const readOf=a=>{ const w=picked.find(x=>x.t===a.word); return w?`<span class="r-wread">${bx(w.c)}</span>`:""; };
+  const mitateP=(a,i)=>`<p><span class="r-koe"><span class="r-wd nw">${a.word} ─</span> ${bx("「"+a.text+"」")}</span>── ${bx(a.refl)}${readOf(a)}<button class="r-pick" data-i="${i}" aria-pressed="${i===core}" onclick="pickOracle(${i})">札に載せる</button></p>`;
+  const unasked=picked.filter(w=>!answers.some(a=>a.word===w.t));
   const rest=answers.map((a,i)=>i===core?"":mitateP(a,i)).join("");
   const heavy=isHeavy();
   const musubiPool=heavy?MUSUBI.filter(m=>!MUSUBI_NOT_FOR_HEAVY.includes(m)):MUSUBI;
@@ -1542,8 +1604,8 @@ function renderResult(){
           ${thread?`<div class="r-thread">${bx(thread)}</div>`:""}
           <div class="r-body">${bx(BASE[p].body)}</div>
           <div class="r-pair">${bx(PAIR[p+s]||"")}</div>
+          ${unasked.length?`<div class="r-words">${unasked.map(w=>`<div class="r-wline"><span class="r-wname">${w.t}</span><span class="r-wc">${bx(w.c)}</span></div>`).join("")}</div>`:""}
           <div class="r-hana">❖</div>
-          <div class="r-words">${picked.map(w=>`<div class="r-wline"><span class="r-wname">${w.t}</span><span class="r-wc">${bx(w.c)}</span></div>`).join("")}</div>
           <div class="r-advice"><span class="r-ippo">今日の一歩</span>${bx(heavy?BASE[p].gentle:BASE[p].advice)}</div>
           <div class="r-musubi">${musubi}</div>
         </div>
@@ -1553,7 +1615,7 @@ function renderResult(){
         </div>
       </div>
       ${heavy?`<div class="r-care" role="note">
-        <p>${bx("この重さが、何日も続いているなら。")}</p>
+        <p>${bx("もし、こんな気持ちが何日も続いているなら。")}</p>
         <p>${bx("ここから先は、庭の外の話です。話を聞いてくれる人が、電話の向こうにいます。")}</p>
         <ul class="r-care-list">
           <li><span class="nw">よりそいホットライン</span> <a class="nw" href="tel:0120279338">0120-279-338</a><span class="nw">（24時間・無料）</span></li>
@@ -1568,6 +1630,8 @@ function renderResult(){
       </div>
       <p class="r-note">${bx("墨詠みは、診断や占いではありません。いまの気持ちを眺めるための、小さな庭です。")}</p>
     </div>`;
+  tidyLines(card);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ if(document.body.dataset.screen==="result") tidyLines(card); });
   trackOnce("play-result");
   card.classList.remove("fade-slow","rv"); void card.offsetWidth;
   if(calm){
