@@ -239,8 +239,6 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .btn:hover{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .btn.shu{border-color:rgba(176,58,32,.6)}
 .btn.shu:hover{background:var(--shu);border-color:var(--shu);color:#fff}
-.btn.ig{border-color:rgba(193,53,132,.55)}
-.btn.ig:hover{background:linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7);border-color:transparent;color:#fff}
 .btn.line{border-color:rgba(6,199,85,.55)}
 .btn.line:hover{background:#06c755;border-color:#06c755;color:#fff}
 #title .btn{margin-top:30px;animation:nijimu 2s ease 3.6s both}
@@ -381,8 +379,9 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-label{color:var(--shu);font-size:.72rem;letter-spacing:.5em;margin-bottom:14px}
 .r-echo{color:var(--ink-70);font-size:.9rem;line-height:2;letter-spacing:.03em;margin-bottom:16px}
 /* 墨の見立て（回答の言い換え返し） */
-.r-mitate{border-bottom:1px solid var(--ink-25);padding-bottom:14px;margin-bottom:18px}
-.r-mitate p{line-height:2.05;letter-spacing:.03em;font-size:.95rem;margin-bottom:10px}
+/* 読む順の格：①冒頭（.r-plain＋.r-core）＞ ②本文（.r-body・.r-pair）＞ ③ほかの見立て（.r-mitate）・言葉の読み（.r-words）。大きさ・濃さ・余白で差をつける */
+.r-mitate{border-bottom:1px solid var(--ink-25);padding-bottom:14px;margin-bottom:22px}
+.r-mitate p{line-height:1.9;letter-spacing:.02em;font-size:.88rem;color:var(--ink-70);margin-bottom:10px}
 .r-mitate p:last-child{margin-bottom:0}
 .nw{white-space:nowrap}
 .r-pick{display:block;margin:8px 0 0 auto;font:inherit;font-size:.74rem;letter-spacing:.12em;color:var(--ink-70);background:transparent;border:1px solid var(--ink-25);border-radius:2px;padding:4px 12px;cursor:pointer}
@@ -392,19 +391,20 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-wd{font-size:.72rem;letter-spacing:.2em;margin-right:.1em}
 /* 冒頭の平たい一言（1段目）と、核心の見立て（2段目）。詩（右の題と本文）はこの後に読む */
 .r-plain{font-size:1.32rem;line-height:1.75;letter-spacing:.06em;color:var(--ink);margin:0 0 10px}
-.r-core{margin-bottom:18px}
+.r-core{margin-bottom:24px}
 .r-core.last{border-bottom:1px solid var(--ink-25);padding-bottom:14px}
 .r-core p{line-height:2.05;letter-spacing:.03em;font-size:1rem}
 .r-core .r-koe{color:var(--ink-70);font-size:.86rem}
 .r-ippo{display:block;color:var(--shu);font-size:.7rem;letter-spacing:.45em;margin-bottom:6px}
 .r-hana{text-align:center;color:var(--ink-45);font-size:.72rem;letter-spacing:.5em;margin:14px 0}
-.r-body{line-height:2.15;letter-spacing:.04em;font-size:.97rem;margin-bottom:6px}
-.r-pair{line-height:2.15;letter-spacing:.04em;font-size:.97rem;color:var(--ink-70)}
+.r-body{line-height:1.9;letter-spacing:.02em;font-size:.95rem;margin-bottom:10px}
+.r-pair{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70)}
 .r-words{margin:16px 0}
-.r-wline{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px dotted var(--ink-25);font-size:.94rem;line-height:1.9}
-.r-wname{font-family:"Yuji Syuku",serif;flex:none;min-width:5em;letter-spacing:.1em}
-.r-wc{color:var(--ink-70)}
-.r-advice{background:var(--ink-12);border-left:3px solid var(--ink-70);padding:14px 18px;border-radius:0 2px 2px 0;line-height:2;font-size:.93rem;margin-bottom:14px}
+.r-wline{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px dotted var(--ink-25);font-size:.88rem;line-height:1.85}
+.r-wname{font-family:"Yuji Syuku",serif;flex:none;min-width:5em;letter-spacing:.1em;font-size:.94rem}
+.r-wc{color:var(--ink-70);letter-spacing:.02em}
+/* 今日の一歩：灰色の箱をやめ、朱の細い罫（上）と余白で見せる。見出しは朱の小さな字（.r-ippo） */
+.r-advice{border-top:1px solid rgba(176,58,32,.6);padding-top:14px;margin:26px 0 14px;line-height:1.9;letter-spacing:.02em;font-size:.95rem}
 .r-musubi{text-align:center;font-family:"Yuji Syuku",serif;letter-spacing:.2em;color:var(--ink-70);font-size:1.05rem;line-height:2;margin:6px 0 2px}
 .r-date{font-family:"Shippori Mincho",serif;letter-spacing:.15em;color:var(--ink-45);font-size:.78rem;margin-bottom:6px}
 .r-btns{display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap}
@@ -443,12 +443,22 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 @media (max-width:600px){
   .sekitei{width:56vw;opacity:.85}
   .q-card{padding:28px 18px}
-  .k-inner{padding:26px 18px 24px}
-  .r-main{gap:16px}
-  .r-rail{padding-left:12px;gap:14px}
-  .seal{width:44px;height:44px;font-size:1.4rem}
+  /* 結果画面：本文の列を広げる（右の題のレールは残して細くする。390幅で列287px・320幅で217px） */
+  #result{padding-left:10px;padding-right:10px}
+  .k-inner{padding:24px 14px 22px}
+  .r-main{gap:10px}
+  .r-rail{padding-left:8px;gap:12px}
+  .r-vtitle{font-size:1.35rem;line-height:1.4}
+  .seal{width:34px;height:34px;font-size:1.15rem;border-radius:5px}
   .r-wname{min-width:4.2em}
   .yomi{right:6%}
+}
+/* 結果画面のときだけ、右上の「音」を結果カードの角から退避（カードの上の余白へ・小さく・やや透かす。押せる） */
+@media (max-width:800px){
+  body[data-screen="result"] #otokit{top:calc(6px + env(safe-area-inset-top));right:8px}
+  body[data-screen="result"] #otobtn{width:38px;height:38px;font-size:.95rem;opacity:.7}
+  body[data-screen="result"] #otobtn:hover,body[data-screen="result"] #otobtn:focus-visible{opacity:1}
+  #result{padding-top:calc(52px + env(safe-area-inset-top))}
 }
 /* ===== 動きを減らす設定（OSの「視差効果を減らす」「アニメーションを減らす」）=====
    しずく・円相のにじみ・題字のくゆり・庭でゆれる言葉・墨はねは動かさず、最終の姿をすぐ見せる。
@@ -1428,7 +1438,7 @@ function renderResult(){
   const title=`${POET[p]}のなかの${POET[s]}`;
   const core=pickCore(p);
   /* 見立て1つ分：拾った言葉 ─ 「答え」── 見立て ＋ 札に載せるボタン（i＝answers の番号。表示の順番とは別） */
-  const mitateP=(a,i)=>`<p><span class="r-koe"><span class="r-wd nw">${a.word} ─</span> ${bx("「"+a.text+"」")}</span>── ${bx(a.refl)}<button class="r-pick" data-i="${i}" aria-pressed="${i===core}" onclick="pickOracle(${i})">${i===core?"札に載せる言葉":"この言葉を札に"}</button></p>`;
+  const mitateP=(a,i)=>`<p><span class="r-koe"><span class="r-wd nw">${a.word} ─</span> ${bx("「"+a.text+"」")}</span>── ${bx(a.refl)}<button class="r-pick" data-i="${i}" aria-pressed="${i===core}" onclick="pickOracle(${i})">札に載せる</button></p>`;
   const rest=answers.map((a,i)=>i===core?"":mitateP(a,i)).join("");
   const heavy=isHeavy();
   const musubiPool=heavy?MUSUBI.filter(m=>!MUSUBI_NOT_FOR_HEAVY.includes(m)):MUSUBI;
@@ -1470,8 +1480,7 @@ function renderResult(){
         <p>${bx("いますぐ危ないと感じたら、")}<span class="nw"><a href="tel:119">119</a>へ。</span></p>
       </div>`:""}
       <div class="r-btns">
-        <button class="btn shu" onclick="makeFuda()">札をつくって保存</button>
-        <button class="btn ig" onclick="makeFuda()">札をつくってシェア</button>
+        <button class="btn shu" onclick="makeFuda()">札をつくる</button>
         <button class="btn" onclick="startGarden()">もう一度 庭へ</button>
       </div>
       <p class="r-note">${bx("墨詠みは、診断や占いではありません。いまの気持ちを眺めるための、小さな庭です。")}</p>
@@ -1503,7 +1512,7 @@ function pickOracle(i){
   LAST.oi=i;
   document.querySelectorAll("#rcard .r-pick").forEach(b=>{
     const on=+b.dataset.i===i;
-    b.setAttribute("aria-pressed",on); b.textContent=on?"札に載せる言葉":"この言葉を札に";
+    b.setAttribute("aria-pressed",on);
   });
 }
 /* 札の番号：主軸×副軸の56通りに第一番〜第五十六番 */
