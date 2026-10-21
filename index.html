@@ -3,15 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>墨詠み 〜墨が、あなたのこころを詠む〜</title>
-<meta name="description" content="半紙に墨が落ち、庭がひらく。浮かぶ言の葉を三つ拾うと、墨があなたのこころを詠みます。">
-<meta property="og:title" content="墨詠み — Sumiyomi">
-<meta property="og:description" content="言の葉を三つ拾うと、墨があなたのこころを詠みます。">
+<title>墨詠み｜いまの気持ちを、三つの言葉で整理する</title>
+<meta name="description" content="なんでこんな気分か、自分でもよく分からない日に。浮かぶ言葉を直感で三つ拾い、短い問いに答えると、いまの気持ちを言葉にして返します。書かずに約2分・登録なし・無料。">
+<meta name="theme-color" content="#f6f3ea">
+<link rel="canonical" href="https://sumiyomi.pages.dev/">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="icon" href="icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="墨詠み — いまの気持ちを、三つの言葉で">
+<meta property="og:description" content="なんでこんな気分か、自分でもよく分からない日に。言葉を三つ拾うと、墨がいまのこころを詠みます。書かずに約2分。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sumiyomi.pages.dev/">
-<meta property="og:image" content="https://sumiyomi.pages.dev/ogp.png">
+<meta property="og:image" content="https://sumiyomi.pages.dev/ogp-v2.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://sumiyomi.pages.dev/ogp.png">
+<meta name="twitter:image" content="https://sumiyomi.pages.dev/ogp-v2.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"墨詠み","url":"https://sumiyomi.pages.dev/","applicationCategory":"LifestyleApplication","operatingSystem":"Any","inLanguage":"ja","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"description":"なんでこんな気分か、自分でもよく分からない日に。浮かぶ言葉を直感で三つ拾い、短い問いに答えると、いまの気持ちを言葉にして返します。書かずに約2分・登録なし・無料。"}
+</script>
 <script>
 /* 背景の絵を最初に決めて、ページ本体を読み終える前に取り寄せ始める（下の pickBackground がこの番号を使う） */
 (function(){
@@ -24,12 +34,55 @@
   const MOTION={2:["bg2_plate","bg2_grass","bg2_bend"],3:["bg3_plate","bg3_mask","bg3_flow","bg3_grass","bg3_bend"]};
   const pre=(name,hi)=>{ const l=document.createElement("link"); l.rel="preload"; l.as="image"; l.href=`bg/${name}.webp`; if(hi) l.fetchPriority="high"; document.head.appendChild(l); };
   pre(`bg${i+1}`,true);
-  (MOTION[i+1]||[]).forEach(n=>pre(n,false));
+  /* 動きを減らす設定のときは bg-motion.js が動かないので、動く背景の部品は取り寄せない（bg-motion.js 冒頭と同じ条件） */
+  const still=matchMedia("(prefers-reduced-motion: reduce)").matches&&!/[?&]motion=1/.test(location.search);
+  if(!still) (MOTION[i+1]||[]).forEach(n=>pre(n,false));
+})();
+</script>
+<script>
+/* 書体（Google Fonts）は描画を止めずに取り寄せる。タイトル画面の文字（題字「墨詠み」・リード文・ボタンなど）は、
+   その書体が届くまで姿を見せない（別の書体で現れてからパッと入れ替わるのを防ぐ）。待つのは最大4.5秒。
+   届くのが書き出しより早ければ、いつもの流れのまま。遅ければ、届いた時点から頭（題字）の書き出しをやり直す */
+(function(){
+  var de=document.documentElement, done=false, need=2;
+  var GATED="h1 .tc,#title .subtitle,#title .roma,#title .yomi,#title .rakkan,#title .btn,#title .jikoku,#title .okuru";
+  de.classList.add("fw");
+  function release(){
+    if(done) return; done=true;
+    de.classList.remove("fw");
+    try{
+      var an=[].map.call(document.querySelectorAll(GATED),function(el){ return el.getAnimations().filter(function(x){ return x.animationName; })[0]; }).filter(Boolean);
+      var d=function(x){ return x.effect.getTiming().delay; };
+      if(an.some(function(x){ return x.currentTime>d(x); })){
+        var base=Math.min.apply(null,an.map(d));
+        an.forEach(function(x){ x.currentTime=base; });
+      }
+    }catch(e){}
+  }
+  function ready(){ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",release,{once:true}); else release(); }
+  function one(){ if(--need<=0) ready(); }
+  setTimeout(ready,4500);
+  /* 読み込み終わった書体CSSを有効にする。font・text があるもの（題字・タイトル画面だけの小さなCSS）は、その書体が届くのを待つ */
+  window.__gf=function(l,font,text){
+    l.onload=function(){
+      l.onload=null;
+      if(!font) return;
+      try{ document.fonts.load(font,text).then(one,one); }catch(e){ one(); }
+    };
+    l.rel="stylesheet";
+  };
+  window.__gfe=one;
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Yuji+Syuku&family=Yuji+Boku&display=swap" rel="stylesheet">
+<!-- 本体の書体CSS。太字（500・700）はこのページで使っていないので取り寄せない（CSSが約4割軽くなる）。太字を使うようになったら wght@400;500;700 に戻す -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Yuji+Syuku&family=Yuji+Boku&display=swap" onload="__gf(this)">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Yuji+Syuku&family=Yuji+Boku&display=swap"></noscript>
+<!-- タイトル画面だけの小さな書体CSS（題字の3文字／リード文などの約54文字）。上の大きなCSSより後ろに置く＝同じ文字では、こちらが先に使われる。
+     タイトル画面の文言を変えたら、下の text の文字も足す（足し忘れても表示は崩れない。その文字だけ大きなCSSの書体が後から届く） -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Yuji+Boku&text=%E5%A2%A8%E8%A9%A0%E3%81%BF&display=swap" onload="__gf(this,'62px Yuji Boku','墨詠み')" onerror="__gfe()">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&text=%202%E3%80%81%E3%80%82%E3%81%82%E3%81%84%E3%81%8B%E3%81%8C%E3%81%8F%E3%81%93%E3%81%95%E3%81%97%E3%81%99%E3%81%9A%E3%81%9F%E3%81%A0%E3%81%A3%E3%81%A4%E3%81%A6%E3%81%AA%E3%81%AB%E3%81%AE%E3%81%B6%E3%81%B8%E3%81%BE%E3%81%BF%E3%82%88%E3%82%8B%E3%82%8D%E3%82%92%E4%B8%89%E5%85%A5%E5%88%86%E5%8D%8A%E5%A2%A8%E5%A4%95%E5%AE%B5%E5%BA%AD%E6%84%9F%E6%8B%BE%E6%98%BC%E6%9B%B8%E6%9C%9D%E6%B5%AE%E7%99%BB%E7%9B%B4%E7%B4%84%E7%B4%99%E8%91%89%E8%A8%80%E8%A9%A0%E8%AA%B0%E8%B4%88%E9%8C%B2%E9%9F%B3%E2%94%80&display=swap" onload="__gf(this,'16px Shippori Mincho',' 2、。あいかがくこさしすずただっつてなにのぶへまみよるろを三入分半墨夕宵庭感拾昼書朝浮登直約紙葉言詠誰贈録音─')" onerror="__gfe()">
 <script data-goatcounter="https://fuyuto.goatcounter.com/count" async src="https://gc.zgo.at/count.js" onload="window.flushTracks?.()"></script>
 <style>
 :root{
@@ -141,6 +194,8 @@ h1 .tc{
   -webkit-mask-position:0 100%;mask-position:0 100%;
   animation:kaku .85s cubic-bezier(.45,.1,.35,1) both;
 }
+/* タイトル画面の文字は、書体が届くまで姿を見せない（head の書体待ちスクリプトが fw を外す） */
+html.fw h1 .tc,html.fw #title :is(.subtitle,.roma,.yomi,.rakkan,.btn,.jikoku,.okuru){visibility:hidden}
 h1 .tc:nth-child(1){animation-delay:2s}
 h1 .tc:nth-child(2){animation-delay:2.62s}
 h1 .tc:nth-child(3){animation-delay:3.24s}
@@ -167,7 +222,15 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
   animation:stamp .5s cubic-bezier(.2,1.6,.4,1) 4s both;
 }
 @keyframes stamp{from{opacity:0;transform:rotate(-4deg) scale(1.7)}to{opacity:1;transform:rotate(-4deg) scale(1)}}
-.subtitle{margin-top:8px;color:var(--ink-70);font-size:clamp(.85rem,3vw,1rem);letter-spacing:.26em;text-align:center;line-height:2.2;animation:nijimu 2.2s ease 3s both}
+.subtitle{margin-top:8px;color:var(--ink-70);font-size:clamp(.85rem,3vw,1rem);letter-spacing:.14em;text-align:center;line-height:2.2;animation:nijimu 2.2s ease 3s both}
+/* リード文と一行の約束の後ろに、和紙色のやわらかい台を敷く（庭の言葉 .word::before と同じ考え方）：絵が濃い所でも読める */
+.subtitle,.roma,.okuru,.jikoku{position:relative;isolation:isolate}
+.subtitle::before,.roma::before,.okuru::before,.jikoku::before{
+  content:"";position:absolute;inset:-12px -34px;z-index:-1;pointer-events:none;
+  background:rgba(243,237,224,.9);border-radius:44px;filter:blur(12px);
+}
+.roma::before,.okuru::before,.jikoku::before{background:rgba(243,237,224,.96)}
+.okuru::before,.jikoku::before{inset:-8px -26px}
 .btn{
   font-family:inherit;font-size:1rem;letter-spacing:.3em;text-indent:.3em;
   padding:14px 46px;border:1px solid var(--ink-45);border-radius:2px;
@@ -181,7 +244,8 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .btn.line{border-color:rgba(6,199,85,.55)}
 .btn.line:hover{background:#06c755;border-color:#06c755;color:#fff}
 #title .btn{margin-top:30px;animation:nijimu 2s ease 3.6s both}
-.roma{margin-top:14px;color:var(--ink-45);font-size:.6rem;letter-spacing:.5em;text-indent:.5em;animation:nijimu 2.2s ease 3.4s both}
+/* 「書かずに、約2分。登録なし。」リード文より一段小さく・やや薄い墨（台を含めた実測で4.5:1以上）。折り返さず1行 */
+.roma{margin-top:14px;color:rgba(29,26,21,.68);font-size:clamp(.78rem,2.7vw,.9rem);letter-spacing:.18em;text-indent:.18em;white-space:nowrap;text-align:center;animation:nijimu 2.2s ease 3.4s both}
 .jikoku{margin-top:12px;color:var(--ink-45);font-size:.75rem;letter-spacing:.45em;animation:nijimu 2s ease 4s both}
 .okuru{margin-top:20px;background:none;border:none;color:var(--ink-70);font-family:inherit;font-size:.82rem;letter-spacing:.2em;cursor:pointer;border-bottom:1px solid var(--ink-25);padding-bottom:3px;animation:nijimu 2s ease 4.2s both}
 .okuru:hover{color:var(--shu);border-color:var(--shu)}
@@ -379,8 +443,34 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
   .r-wname{min-width:4.2em}
   .yomi{right:6%}
 }
+/* ===== 動きを減らす設定（OSの「視差効果を減らす」「アニメーションを減らす」）=====
+   しずく・円相のにじみ・題字のくゆり・庭でゆれる言葉・墨はねは動かさず、最終の姿をすぐ見せる。
+   文字の出入りと画面の切り替えは、短い透明度の変化だけにする。背景の動き（bg-motion.js）は向こうで止めてある */
+@keyframes rm-in{from{opacity:0}to{opacity:1}}
+@keyframes rm-out{to{opacity:0}}
+@media (prefers-reduced-motion: reduce){
+  #drop{display:none}
+  .kasumi{animation:none}
+  .stain{animation:none;transform:translate(-50%,-50%) scale(1);opacity:1}
+  .enso path.main{animation:none;stroke-dashoffset:0}
+  h1 .tc{animation:rm-in .5s ease both;-webkit-mask-image:none;mask-image:none}
+  h1 .tc:nth-child(1){animation-delay:0s}
+  h1 .tc:nth-child(2){animation-delay:.15s}
+  h1 .tc:nth-child(3){animation-delay:.3s}
+  .subtitle,.yomi{animation:rm-in .5s ease .4s both}
+  .roma,.rakkan,#title .btn{animation:rm-in .5s ease .5s both}
+  .rakkan{transform:rotate(-4deg)}
+  .jikoku,.okuru{animation:rm-in .5s ease .6s both}
+  #title.exiting h1 .tc,
+  #title.exiting .subtitle,#title.exiting .roma,#title.exiting .jikoku,
+  #title.exiting .okuru,#title.exiting .btn,#title.exiting .rakkan,#title.exiting .yomi{animation:rm-out .3s ease forwards}
+  .screen,.bgimg{transition-duration:.4s}
+  .word,.word.chosen{animation:none}
+  .splat,.ripple{display:none}
+  .fade-slow{animation:rm-in .4s ease}
+}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/budoux@0.6.4/bundle/budoux-ja.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/budoux@0.6.4/bundle/budoux-ja.min.js" defer></script>
 <script src="bg-motion.js?v=20261001e" defer></script>
 </head>
 <body>
@@ -446,7 +536,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
     <div class="rakkan">詠</div>
   </div>
   <p class="subtitle">半紙に浮かぶ 言の葉を 三つ、<br>直感のままに 拾ってください。<br>墨が、いまの あなたの こころを 詠みます。</p>
-  <div class="roma">SUMIYOMI — INK THAT READS YOUR HEART</div>
+  <div class="roma">書かずに、約2分。登録なし。</div>
   <button class="btn" onclick="startGarden()">庭へ入る</button>
   <div class="jikoku" id="jikoku"></div>
   <button class="okuru" onclick="shareApp()">この庭を、誰かに贈る</button>
@@ -1075,7 +1165,15 @@ const WordFX=(()=>{
     free.push({i,t,d,b});
   }
   let T=0,last=0;
+  const RMQ=matchMedia("(prefers-reduced-motion: reduce)");
   function attach(el){
+    if(RMQ.matches){
+      /* 動きを減らす設定：煙のゆがみ・ぼかしは使わず、ふつうに現れて消えるだけ */
+      el.style.transition="opacity .5s ease, color .4s";
+      el.style.opacity="0";
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.style.opacity=".95"; }));
+      return {el,rm:true,mode:"in"};
+    }
     const slot=free.pop();
     if(!slot){ el.style.opacity=".95"; return null; }
     el.style.filter="url(#wm"+slot.i+")";
@@ -1085,6 +1183,13 @@ const WordFX=(()=>{
   }
   function dissolve(a,fast){
     if(!a||a.mode==="out")return;
+    if(a.rm){
+      a.mode="out";
+      a.el.style.transition="opacity "+(fast?.3:.6)+"s ease";
+      a.el.style.opacity="0";
+      setTimeout(()=>a.el.remove(),(fast?300:600)+50);
+      return;
+    }
     a.mode="out"; a.t=0; a.dur=fast?1.1:2.4;
   }
   function step(now){
