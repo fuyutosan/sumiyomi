@@ -219,7 +219,15 @@ body.has-bg .okuru,body.has-bg .roma,body.has-bg .subtitle{text-shadow:0 0 8px v
   background:var(--ink);z-index:3;animation:dropfall .8s cubic-bezier(.55,0,.85,.36) .3s both}
 @keyframes dropfall{from{transform:translateY(-8vh) scaleY(1.2);opacity:0}12%{opacity:1}to{transform:translateY(46vh) scaleY(1);opacity:1}}
 #drop.done{animation:none;opacity:0;transition:opacity .2s}
-.enso-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:min(82vw,460px);aspect-ratio:1}
+/* 円相の大きさ：幅だけで決めると、背の低い画面（ノートパソコン・横向きのスマホ）で下の「庭へ入る」が画面の外に出る。
+   円相以外の高さ（説明・ボタン・時刻・贈る＋余白）が約356pxなので、残りの高さに収める。題字も円相に合わせて縮める */
+.enso-wrap{--enso:min(82vw,460px);position:relative;display:flex;align-items:center;justify-content:center;width:var(--enso);aspect-ratio:1}
+@supports (height:100svh){.enso-wrap{--enso:min(82vw,460px,max(260px,100svh - 356px))}}
+/* それでも入らない画面ではタイトルをスクロールできるようにする（中央寄せは上下の auto 余白で。はみ出しても上が切れない）。
+   横は説明文の台（::before）が少しはみ出すので、横には動かさない */
+#title{overflow-y:auto;overflow-x:hidden;justify-content:flex-start}
+#title>.enso-wrap{margin-top:auto;flex:none}
+#title>.okuru{margin-bottom:auto}
 /* 滲みのしみ（落ちた墨が広がる） */
 .stain{position:absolute;left:50%;top:50%;width:76%;aspect-ratio:1;transform:translate(-50%,-50%) scale(.1);
   border-radius:47% 53% 50% 50%/52% 48% 55% 45%;
@@ -230,7 +238,7 @@ body.has-bg .okuru,body.has-bg .roma,body.has-bg .subtitle{text-shadow:0 0 8px v
 .enso path.main{stroke-dasharray:100;stroke-dashoffset:100;animation:draw 2.6s cubic-bezier(.5,.05,.4,1) 1.25s forwards}
 @keyframes draw{to{stroke-dashoffset:0}}
 h1{
-  font-family:"Yuji Boku","Yuji Syuku",serif;font-size:clamp(3.6rem,16vw,6.2rem);
+  font-family:"Yuji Boku","Yuji Syuku",serif;font-size:min(clamp(3.6rem,16vw,6.2rem), var(--enso,460px) * .2157);
   letter-spacing:.08em;font-weight:400;writing-mode:vertical-rl;line-height:1.16;
   color:var(--ink);text-shadow:0 0 1px var(--ink-70), 0 0 14px var(--ink-12);
   position:relative;z-index:2;
