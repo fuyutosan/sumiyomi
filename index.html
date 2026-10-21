@@ -89,6 +89,12 @@
   --paper:#f6f3ea; --paper2:#efebdf;
   --ink:#1d1a15; --ink-70:rgba(29,26,21,.7); --ink-45:rgba(29,26,21,.45); --ink-25:rgba(29,26,21,.25); --ink-12:rgba(29,26,21,.12);
   --shu:#b03a20;
+  /* 筆の下線3種・円相・落款の四角（第7回：問いの選択肢と拾い枠。色は background、形は mask で切り抜く） */
+  --sumi-brush1:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 24' preserveAspectRatio='none'%3E%3Cfilter id='k' x='-5%25' y='-20%25' width='110%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.9' numOctaves='2' seed='3' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 0 0 0 -0.55' result='m'/%3E%3CfeComposite in='SourceGraphic' in2='m' operator='in' result='c'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08' numOctaves='1' seed='10' result='w'/%3E%3CfeDisplacementMap in='c' in2='w' scale='2.2'/%3E%3C/filter%3E%3Cpath filter='url(%23k)' d='M6.0 8.3C8.7 6.7 16.8 6.3 22.2 5.9C27.6 5.6 32.9 6.0 38.3 6.1C43.7 6.1 49.1 6.1 54.5 6.2C59.9 6.2 65.3 6.2 70.7 6.2C76.1 6.2 81.4 6.2 86.8 6.1C92.2 6.1 97.6 6.1 103.0 6.0C108.4 6.0 113.8 5.9 119.2 5.8C124.6 5.8 129.9 5.7 135.3 5.6C140.7 5.6 146.1 5.5 151.5 5.4C156.9 5.3 162.3 5.3 167.7 5.2C173.1 5.2 178.4 5.1 183.8 5.1C189.2 5.1 194.6 5.0 200.0 5.0C205.4 5.0 210.8 5.1 216.2 5.1C221.6 5.1 226.9 5.2 232.3 5.3C237.7 5.3 243.1 5.4 248.5 5.5C253.9 5.6 259.3 5.8 264.7 5.9C270.1 6.0 275.4 6.1 280.8 6.3C286.2 6.4 291.6 6.6 297.0 6.7C302.4 6.9 307.8 7.0 313.2 7.2C318.6 7.3 323.9 7.4 329.3 7.6C334.7 7.7 340.1 7.8 345.5 7.9C350.9 8.0 356.3 8.1 361.7 8.2C367.1 8.3 372.4 8.4 377.8 8.5C383.2 8.6 391.3 8.6 394.0 8.8C396.7 9.0 396.7 9.6 394.0 9.8C391.3 10.0 383.2 9.9 377.8 10.0C372.4 10.1 367.1 10.1 361.7 10.2C356.3 10.2 350.9 10.3 345.5 10.4C340.1 10.5 334.7 10.6 329.3 10.7C323.9 10.8 318.6 11.0 313.2 11.1C307.8 11.3 302.4 11.4 297.0 11.6C291.6 11.7 286.2 11.9 280.8 12.0C275.4 12.2 270.1 12.4 264.7 12.5C259.3 12.7 253.9 12.9 248.5 13.0C243.1 13.2 237.7 13.3 232.3 13.4C226.9 13.6 221.6 13.7 216.2 13.8C210.8 13.9 205.4 14.0 200.0 14.1C194.6 14.2 189.2 14.3 183.8 14.3C178.4 14.4 173.1 14.4 167.7 14.5C162.3 14.6 156.9 14.6 151.5 14.7C146.1 14.7 140.7 14.8 135.3 14.8C129.9 14.9 124.6 15.0 119.2 15.0C113.8 15.1 108.4 15.2 103.0 15.3C97.6 15.4 92.2 15.5 86.8 15.7C81.4 15.8 76.1 15.9 70.7 16.1C65.3 16.3 59.9 16.5 54.5 16.6C49.1 16.8 43.7 17.0 38.3 17.2C32.9 17.4 27.6 18.1 22.2 17.9C16.8 17.7 8.7 17.6 6.0 16.0C3.3 14.4 3.3 10.0 6.0 8.3Z'/%3E%3C/svg%3E");
+  --sumi-brush2:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 24' preserveAspectRatio='none'%3E%3Cfilter id='k' x='-5%25' y='-20%25' width='110%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.9' numOctaves='2' seed='8' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 0 0 0 -0.55' result='m'/%3E%3CfeComposite in='SourceGraphic' in2='m' operator='in' result='c'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08' numOctaves='1' seed='15' result='w'/%3E%3CfeDisplacementMap in='c' in2='w' scale='2.2'/%3E%3C/filter%3E%3Cpath filter='url(%23k)' d='M6.0 9.1C8.7 7.2 16.8 6.8 22.2 6.4C27.6 6.0 32.9 6.5 38.3 6.6C43.7 6.7 49.1 6.7 54.5 6.8C59.9 6.9 65.3 7.0 70.7 7.0C76.1 7.1 81.4 7.2 86.8 7.2C92.2 7.3 97.6 7.3 103.0 7.4C108.4 7.4 113.8 7.4 119.2 7.5C124.6 7.5 129.9 7.5 135.3 7.4C140.7 7.4 146.1 7.4 151.5 7.4C156.9 7.3 162.3 7.2 167.7 7.2C173.1 7.1 178.4 7.0 183.8 6.9C189.2 6.9 194.6 6.8 200.0 6.7C205.4 6.6 210.8 6.5 216.2 6.4C221.6 6.3 226.9 6.2 232.3 6.2C237.7 6.1 243.1 6.1 248.5 6.0C253.9 6.0 259.3 5.9 264.7 5.9C270.1 5.9 275.4 5.9 280.8 6.0C286.2 6.0 291.6 6.0 297.0 6.1C302.4 6.1 307.8 6.2 313.2 6.3C318.6 6.4 323.9 6.5 329.3 6.6C334.7 6.7 340.1 6.8 345.5 6.9C350.9 7.0 356.3 7.2 361.7 7.3C367.1 7.4 372.4 7.5 377.8 7.6C383.2 7.8 391.3 7.9 394.0 8.1C396.7 8.2 396.7 8.4 394.0 8.5C391.3 8.7 383.2 9.0 377.8 9.2C372.4 9.4 367.1 9.6 361.7 9.8C356.3 10.0 350.9 10.2 345.5 10.4C340.1 10.6 334.7 10.8 329.3 11.1C323.9 11.3 318.6 11.5 313.2 11.7C307.8 11.9 302.4 12.1 297.0 12.3C291.6 12.5 286.2 12.7 280.8 12.8C275.4 13.0 270.1 13.2 264.7 13.3C259.3 13.4 253.9 13.6 248.5 13.7C243.1 13.8 237.7 13.9 232.3 14.0C226.9 14.1 221.6 14.2 216.2 14.3C210.8 14.4 205.4 14.4 200.0 14.5C194.6 14.6 189.2 14.7 183.8 14.8C178.4 14.9 173.1 15.0 167.7 15.1C162.3 15.2 156.9 15.3 151.5 15.4C146.1 15.5 140.7 15.7 135.3 15.8C129.9 15.9 124.6 16.1 119.2 16.3C113.8 16.5 108.4 16.6 103.0 16.8C97.6 17.0 92.2 17.2 86.8 17.4C81.4 17.6 76.1 17.8 70.7 18.0C65.3 18.2 59.9 18.4 54.5 18.6C49.1 18.8 43.7 19.0 38.3 19.2C32.9 19.4 27.6 20.0 22.2 19.7C16.8 19.4 8.7 19.1 6.0 17.3C3.3 15.6 3.3 10.9 6.0 9.1Z'/%3E%3C/svg%3E");
+  --sumi-brush3:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 24' preserveAspectRatio='none'%3E%3Cfilter id='k' x='-5%25' y='-20%25' width='110%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.9' numOctaves='2' seed='13' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 0 0 0 -0.55' result='m'/%3E%3CfeComposite in='SourceGraphic' in2='m' operator='in' result='c'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08' numOctaves='1' seed='20' result='w'/%3E%3CfeDisplacementMap in='c' in2='w' scale='2.2'/%3E%3C/filter%3E%3Cpath filter='url(%23k)' d='M6.0 8.6C8.7 6.8 16.8 6.4 22.2 6.0C27.6 5.6 32.9 6.0 38.3 6.1C43.7 6.1 49.1 6.2 54.5 6.2C59.9 6.3 65.3 6.4 70.7 6.4C76.1 6.5 81.4 6.6 86.8 6.7C92.2 6.8 97.6 6.9 103.0 7.1C108.4 7.2 113.8 7.3 119.2 7.4C124.6 7.5 129.9 7.6 135.3 7.8C140.7 7.9 146.1 8.0 151.5 8.1C156.9 8.1 162.3 8.2 167.7 8.3C173.1 8.4 178.4 8.4 183.8 8.4C189.2 8.5 194.6 8.5 200.0 8.5C205.4 8.5 210.8 8.5 216.2 8.4C221.6 8.4 226.9 8.3 232.3 8.3C237.7 8.2 243.1 8.2 248.5 8.1C253.9 8.0 259.3 7.9 264.7 7.9C270.1 7.8 275.4 7.7 280.8 7.7C286.2 7.6 291.6 7.5 297.0 7.5C302.4 7.4 307.8 7.4 313.2 7.4C318.6 7.4 323.9 7.3 329.3 7.4C334.7 7.4 340.1 7.4 345.5 7.4C350.9 7.5 356.3 7.5 361.7 7.6C367.1 7.7 372.4 7.7 377.8 7.8C383.2 8.0 391.3 7.9 394.0 8.2C396.7 8.6 396.7 9.4 394.0 9.8C391.3 10.3 383.2 10.5 377.8 10.7C372.4 11.0 367.1 11.3 361.7 11.5C356.3 11.7 350.9 12.0 345.5 12.2C340.1 12.4 334.7 12.6 329.3 12.8C323.9 13.0 318.6 13.1 313.2 13.3C307.8 13.4 302.4 13.5 297.0 13.7C291.6 13.8 286.2 13.9 280.8 14.0C275.4 14.1 270.1 14.1 264.7 14.2C259.3 14.3 253.9 14.4 248.5 14.4C243.1 14.5 237.7 14.6 232.3 14.7C226.9 14.8 221.6 14.8 216.2 14.9C210.8 15.0 205.4 15.1 200.0 15.2C194.6 15.3 189.2 15.5 183.8 15.6C178.4 15.7 173.1 15.9 167.7 16.0C162.3 16.1 156.9 16.3 151.5 16.5C146.1 16.6 140.7 16.8 135.3 17.0C129.9 17.1 124.6 17.3 119.2 17.5C113.8 17.6 108.4 17.8 103.0 17.9C97.6 18.1 92.2 18.2 86.8 18.3C81.4 18.5 76.1 18.6 70.7 18.7C65.3 18.8 59.9 18.8 54.5 18.9C49.1 19.0 43.7 19.0 38.3 19.0C32.9 19.1 27.6 19.5 22.2 19.1C16.8 18.7 8.7 18.2 6.0 16.4C3.3 14.7 3.3 10.3 6.0 8.6Z'/%3E%3C/svg%3E");
+  --sumi-enso:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cfilter id='k' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.12' numOctaves='2' seed='5' result='w'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='w' scale='1.4'/%3E%3C/filter%3E%3Cpath filter='url(%23k)' d='M34.0 15.6C32.3 16.2 27.0 18.0 24.0 20.0C21.0 22.1 18.1 24.8 15.7 27.7C13.4 30.7 11.3 34.1 9.8 37.7C8.4 41.3 7.3 45.4 7.0 49.3C6.6 53.3 6.8 57.5 7.7 61.4C8.5 65.4 10.0 69.4 12.0 73.0C14.0 76.5 16.7 80.0 19.6 82.8C22.6 85.6 26.2 88.0 29.9 89.8C33.6 91.6 37.8 92.8 41.8 93.4C45.8 94.0 50.1 93.9 54.0 93.3C58.0 92.6 61.9 91.1 65.4 89.3C68.8 87.5 72.0 85.0 74.8 82.4C77.5 79.8 79.8 76.7 81.7 73.5C83.6 70.4 85.2 67.0 86.3 63.6C87.3 60.1 87.8 54.7 88.0 53.0C88.1 51.2 87.5 51.2 87.1 52.9C86.7 54.6 86.5 59.9 85.4 63.2C84.4 66.6 82.8 69.9 80.9 72.9C79.0 75.9 76.7 78.9 74.0 81.3C71.3 83.8 68.1 86.1 64.8 87.7C61.4 89.4 57.6 90.7 53.8 91.2C50.1 91.8 46.0 91.8 42.2 91.2C38.4 90.6 34.5 89.4 31.0 87.7C27.5 86.0 24.1 83.6 21.3 81.0C18.5 78.3 16.0 75.1 14.1 71.7C12.2 68.3 10.8 64.5 10.0 60.8C9.2 57.1 9.0 53.1 9.3 49.3C9.6 45.6 10.5 41.8 11.8 38.4C13.2 34.9 15.1 31.6 17.3 28.8C19.5 25.9 22.2 23.3 25.0 21.2C27.9 19.2 33.0 17.5 34.5 16.6C36.0 15.7 35.8 15.1 34.0 15.6ZM31.2 17.4C29.5 18.2 24.5 20.9 21.7 23.5C18.9 26.0 16.3 29.1 14.3 32.4C12.4 35.7 10.8 39.5 9.8 43.3C8.9 47.2 8.5 51.4 8.8 55.4C9.1 59.4 10.1 63.6 11.6 67.4C13.1 71.1 15.3 74.9 18.0 78.0C20.6 81.1 23.9 84.0 27.4 86.2C30.9 88.3 35.0 90.0 38.9 91.0C42.9 91.9 47.3 92.3 51.3 91.9C55.3 91.6 59.5 90.5 63.1 88.9C66.8 87.4 70.3 85.1 73.2 82.6C76.2 80.0 78.7 76.9 80.8 73.8C82.9 70.6 84.6 67.1 85.7 63.6C86.9 60.0 87.5 56.2 87.5 52.6C87.6 48.9 86.5 43.5 86.1 41.7C85.8 39.9 85.3 40.1 85.4 41.9C85.5 43.7 86.8 48.9 86.7 52.5C86.6 56.1 86.0 59.8 84.9 63.2C83.8 66.7 82.1 70.1 80.0 73.1C77.9 76.2 75.3 79.1 72.4 81.5C69.5 83.8 66.1 85.9 62.6 87.3C59.0 88.7 55.1 89.6 51.2 89.9C47.4 90.1 43.3 89.7 39.5 88.8C35.8 87.8 32.0 86.2 28.7 84.1C25.4 82.1 22.3 79.3 19.8 76.4C17.4 73.4 15.3 69.9 13.8 66.3C12.4 62.8 11.5 58.9 11.2 55.1C10.9 51.3 11.2 47.3 12.0 43.7C12.8 40.1 14.3 36.4 16.1 33.3C17.9 30.1 20.3 27.1 22.9 24.6C25.5 22.1 30.4 19.7 31.8 18.5C33.2 17.3 32.9 16.5 31.2 17.4ZM40.4 15.2C38.7 15.6 33.5 17.0 30.5 18.7C27.4 20.3 24.4 22.5 21.9 25.1C19.3 27.6 17.1 30.6 15.3 33.8C13.6 37.0 12.2 40.6 11.5 44.2C10.7 47.8 10.5 51.7 10.8 55.5C11.1 59.2 12.1 63.1 13.5 66.6C14.9 70.1 17.0 73.6 19.4 76.5C21.9 79.4 24.9 82.2 28.1 84.2C31.3 86.3 35.1 88.0 38.8 89.0C42.5 90.0 46.5 90.5 50.3 90.3C54.1 90.2 58.0 89.4 61.6 88.1C65.1 86.8 68.6 84.9 71.5 82.7C74.5 80.4 77.2 77.7 79.4 74.7C81.6 71.8 83.4 68.5 84.6 65.1C85.9 61.8 86.7 58.1 87.0 54.6C87.3 51.1 87.0 47.4 86.3 44.0C85.6 40.6 84.3 37.2 82.7 34.1C81.1 31.1 77.7 27.0 76.6 25.7C75.5 24.4 75.3 24.7 76.2 26.1C77.1 27.6 80.5 31.4 82.1 34.4C83.6 37.4 84.8 40.8 85.5 44.1C86.2 47.5 86.4 51.1 86.1 54.5C85.9 58.0 85.1 61.5 83.8 64.8C82.5 68.0 80.7 71.3 78.6 74.1C76.4 76.8 73.7 79.5 70.8 81.5C67.9 83.6 64.5 85.3 61.1 86.4C57.6 87.5 53.9 88.2 50.3 88.2C46.7 88.3 42.9 87.8 39.4 86.8C35.9 85.8 32.4 84.2 29.4 82.2C26.4 80.2 23.6 77.7 21.3 74.9C19.0 72.1 17.1 68.9 15.7 65.6C14.4 62.3 13.5 58.6 13.1 55.1C12.8 51.6 13.0 47.9 13.7 44.5C14.3 41.1 15.5 37.7 17.1 34.6C18.7 31.6 20.8 28.7 23.1 26.2C25.5 23.7 28.3 21.5 31.2 19.8C34.1 18.1 39.0 16.7 40.6 15.9C42.1 15.1 42.0 14.7 40.4 15.2ZM34.7 17.6C33.1 18.4 28.2 21.0 25.5 23.4C22.8 25.7 20.3 28.6 18.3 31.7C16.4 34.8 14.8 38.3 13.9 41.8C12.9 45.4 12.4 49.3 12.6 53.0C12.7 56.7 13.5 60.6 14.8 64.2C16.0 67.7 18.0 71.2 20.3 74.2C22.6 77.3 25.6 80.0 28.7 82.2C31.9 84.4 35.6 86.1 39.2 87.2C42.9 88.2 47.0 88.8 50.8 88.6C54.6 88.5 58.6 87.7 62.2 86.4C65.8 85.2 70.7 82.0 72.3 80.9C73.8 79.8 73.3 79.2 71.5 79.8C69.7 80.5 65.1 83.7 61.6 84.8C58.2 85.9 54.4 86.5 50.7 86.6C47.1 86.6 43.3 86.0 39.9 85.0C36.4 83.9 33.0 82.2 30.1 80.2C27.1 78.1 24.4 75.5 22.2 72.7C20.0 69.9 18.3 66.6 17.0 63.3C15.8 59.9 15.1 56.3 14.9 52.8C14.7 49.3 15.1 45.7 16.0 42.3C16.8 38.9 18.2 35.6 20.0 32.6C21.8 29.7 24.1 26.9 26.6 24.6C29.1 22.2 33.8 19.7 35.1 18.6C36.5 17.4 36.3 16.8 34.7 17.6ZM79.8 73.0C80.8 71.5 83.6 66.8 84.7 63.5C85.8 60.2 86.5 56.6 86.6 53.2C86.8 49.7 86.4 46.1 85.6 42.8C84.8 39.5 83.5 36.2 81.9 33.2C80.2 30.3 76.8 26.4 75.7 25.1C74.6 23.8 74.3 24.1 75.2 25.5C76.2 27.0 79.6 30.7 81.2 33.6C82.8 36.5 84.1 39.7 84.9 43.0C85.6 46.2 86.0 49.7 85.8 53.1C85.6 56.5 85.0 60.0 83.8 63.2C82.7 66.4 79.7 70.7 79.0 72.4C78.4 74.0 78.9 74.5 79.8 73.0ZM35.9 17.7C34.4 18.5 30.2 21.0 27.7 23.1C25.2 25.2 22.9 27.6 21.1 30.2C19.2 32.9 17.7 35.9 16.6 38.9C15.5 42.0 14.8 45.3 14.6 48.5C14.3 51.8 14.6 55.2 15.2 58.4C15.9 61.7 17.1 64.9 18.6 67.8C20.2 70.8 22.2 73.6 24.6 76.0C26.9 78.4 29.7 80.6 32.6 82.3C35.5 83.9 40.5 85.7 42.1 86.0C43.8 86.3 44.0 84.8 42.6 83.8C41.2 82.8 36.4 81.7 33.7 80.2C31.0 78.6 28.4 76.5 26.3 74.3C24.1 72.0 22.2 69.4 20.8 66.6C19.3 63.9 18.3 60.9 17.6 57.9C16.9 54.9 16.7 51.7 16.8 48.6C17.0 45.6 17.6 42.5 18.6 39.6C19.5 36.7 20.9 33.8 22.6 31.3C24.3 28.7 26.4 26.4 28.7 24.3C31.0 22.2 35.1 19.8 36.3 18.7C37.5 17.6 37.3 17.0 35.9 17.7ZM53.3 86.8C55.2 86.7 60.9 85.7 64.3 84.3C67.7 82.9 71.1 80.8 74.0 78.4C76.8 76.0 79.3 73.0 81.2 69.8C83.1 66.6 84.5 63.0 85.3 59.4C86.1 55.8 86.4 52.0 86.1 48.4C85.8 44.7 85.0 41.0 83.6 37.7C82.3 34.4 79.2 29.8 78.2 28.3C77.2 26.8 76.9 27.1 77.7 28.7C78.5 30.3 81.7 34.7 82.9 38.0C84.2 41.2 85.0 44.9 85.3 48.4C85.6 51.9 85.3 55.7 84.5 59.2C83.7 62.6 82.3 66.2 80.4 69.3C78.5 72.3 75.9 75.2 73.1 77.4C70.4 79.7 67.0 81.5 63.7 82.8C60.4 84.0 54.9 84.2 53.2 84.8C51.4 85.5 51.5 86.9 53.3 86.8ZM33.1 20.2C31.8 21.1 27.9 24.3 25.7 26.7C23.5 29.1 21.6 31.8 20.2 34.6C18.7 37.5 17.6 40.7 17.0 43.8C16.4 46.9 16.2 50.3 16.5 53.5C16.8 56.7 17.5 60.0 18.7 63.0C19.9 66.0 21.5 69.0 23.5 71.6C25.4 74.1 27.9 76.6 30.5 78.5C33.2 80.5 36.2 82.1 39.4 83.2C42.5 84.4 45.9 85.1 49.3 85.2C52.7 85.4 56.2 85.1 59.5 84.4C62.8 83.6 66.2 82.4 69.2 80.6C72.1 78.9 75.0 76.6 77.3 74.1C79.6 71.5 81.6 68.4 82.9 65.2C84.3 62.0 85.2 58.5 85.6 55.1C86.0 51.7 85.4 46.5 85.3 44.8C85.1 43.1 84.6 43.2 84.5 44.9C84.4 46.6 85.1 51.7 84.7 55.0C84.3 58.3 83.5 61.8 82.1 64.8C80.7 67.9 78.8 70.9 76.5 73.3C74.2 75.8 71.3 77.9 68.4 79.4C65.5 81.0 62.2 82.0 59.0 82.6C55.8 83.3 52.5 83.4 49.3 83.1C46.2 82.9 43.0 82.2 40.1 81.1C37.2 79.9 34.4 78.4 31.9 76.5C29.5 74.7 27.2 72.4 25.4 70.0C23.6 67.6 22.1 64.8 21.0 62.0C19.9 59.2 19.2 56.2 18.9 53.2C18.6 50.3 18.7 47.1 19.2 44.2C19.7 41.2 20.6 38.3 21.9 35.5C23.2 32.8 24.9 30.2 26.9 27.8C28.9 25.4 32.7 22.6 33.7 21.3C34.8 20.1 34.4 19.3 33.1 20.2Z'/%3E%3C/svg%3E");
+  --sumi-seal:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cfilter id='k'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='2' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='2.6'/%3E%3C/filter%3E%3Crect filter='url(%23k)' x='3' y='3' width='18' height='18' rx='2'/%3E%3C/svg%3E");
 }
 body.dawn { --paper:#f8f2e5; --paper2:#f1e9d8; }
 body.dusk { --paper:#f4eede; --paper2:#ece3cd; }
@@ -289,16 +295,40 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 /* ===== 庭 ===== */
 #garden{justify-content:flex-start;padding-top:calc(16px + env(safe-area-inset-top))}
 .garden-header{text-align:center;color:var(--ink-70);letter-spacing:.24em;font-size:.92rem;line-height:1.9;z-index:6;position:relative}
-.picked-row{display:flex;gap:12px;margin-top:8px;justify-content:center;min-height:44px}
+.picked-row{display:flex;gap:12px;margin-top:8px;justify-content:center;min-height:78px}
+/* 拾い枠は円相（墨の輪）。空きは淡く（.18）、拾うと濃く（.70）。三つの輪は向きを変える（::before だけを回す＝文字は回さない）。
+   拾った言葉は縦書き（庭の言葉と同じ）で、輪の内側に収まる大きさ（文字数で切り替え。全40語×3つの輪で文字と輪の最短距離を実測：3文字.92rem・4文字.74rem で2px以上あく。4文字を .82rem にすると輪の線に触れる）。
+   輪の絵は内側の空きの中心が箱の中心から右に1.5pxずれているので、mask-position で左へ1.5px寄せて中心をそろえる（回しても文字が輪の中央に座る）。空きには薄い「一・二・三」、拾うと右下に朱の落款 */
 .picked-slot{
-  min-width:92px;height:42px;border:1px dashed var(--ink-25);border-radius:2px;
-  display:flex;align-items:center;justify-content:center;position:relative;
-  font-family:"Yuji Syuku",serif;font-size:1.08rem;letter-spacing:.12em;color:var(--ink);
-  background:rgba(246,243,234,.6);padding:0 12px;transition:.4s;
+  width:78px;height:78px;position:relative;isolation:isolate;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Yuji Syuku",serif;font-size:.74rem;letter-spacing:.04em;line-height:1;color:var(--ink);
+  writing-mode:vertical-rl;
 }
-.picked-slot.filled{border:1px solid var(--ink-70);background:var(--paper);box-shadow:2px 3px 10px rgba(29,26,21,.16)}
-.picked-slot.filled::before{content:"";position:absolute;top:5px;left:6px;width:5px;height:5px;border-radius:50%;background:var(--shu)}
-#field{position:absolute;inset:0;top:106px;overflow:hidden}
+.picked-slot::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:var(--ink);opacity:.18;transition:opacity .4s;
+  -webkit-mask:var(--sumi-enso) no-repeat -1.5px 0/100% 100%;mask:var(--sumi-enso) no-repeat -1.5px 0/100% 100%;
+}
+.picked-slot.filled::before{opacity:.55}
+#slot1::before{transform:rotate(115deg)}
+#slot2::before{transform:rotate(230deg)}
+.picked-slot[data-len="1"],.picked-slot[data-len="2"]{font-size:1.1rem}
+.picked-slot[data-len="3"]{font-size:.92rem}
+.picked-slot[data-len="4"]{font-size:.74rem}
+.picked-slot:not(.filled)::after{
+  content:attr(data-n);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  writing-mode:horizontal-tb;font-size:.78rem;letter-spacing:0;color:rgba(29,26,21,.2);pointer-events:none;
+}
+.picked-slot.filled::after{
+  content:"";position:absolute;right:4px;bottom:4px;width:13px;height:13px;pointer-events:none;
+  background:var(--shu);opacity:.9;transform:rotate(-6deg);animation:seal-pop .2s cubic-bezier(.2,.9,.3,1) both;
+  -webkit-mask:var(--sumi-seal) no-repeat center/100% 100%;mask:var(--sumi-seal) no-repeat center/100% 100%;
+}
+@keyframes seal-pop{from{transform:rotate(-6deg) scale(1.3);opacity:0}to{transform:rotate(-6deg) scale(1);opacity:.9}}
+/* 幅380未満では見出しの「三つ」が右上の「音」ボタンの下に入るので、文字を少し詰め、右に音ボタンぶんの余白をとる（拾い枠の並びは中央のまま） */
+@media (max-width:379px){.gh-t{display:block;font-size:.84rem;letter-spacing:.12em;padding:0 46px 0 6px}}
+#field{position:absolute;inset:0;top:140px;overflow:hidden}
 /* 横長の画面（幅900px以上）：絵は中央の帯だけなので、案内・拾い枠（.garden-header）と言葉の出る範囲（#field）を、絵の帯の幅に合わせて中央へ。言葉が絵の外の無地に漂わない。スマホは変えない
    絵の帯の幅は画面の「高さ」で決まる（bg-motion.js：画面の高さの約58%に絵の上下が収まる拡大率。帯の幅は高さ900pxで約440〜600px）ので、幅も高さに合わせて 560px（高さ900）〜640px（高さ1032以上）、低い画面では最小420px */
 @media (min-width:900px){
@@ -343,18 +373,39 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .q-progress{color:var(--shu);font-size:.72rem;letter-spacing:.5em;margin-bottom:16px}
 .q-text{font-size:1.1rem;line-height:2.1;letter-spacing:.06em;margin-bottom:24px;position:relative}
 .q-answers{display:flex;flex-direction:column;gap:12px;position:relative}
+/* 問いの選択肢（第7回）：四角い枠はやめ、筆の下線にする。行ぜんたいが押せる（min-height:56px）。
+   手がかり＝後ろの縁のない淡い滲み（.ans::before）。下線＝文字を包む .ans-t の ::after（長さは JS が測った最長行 --lw ＋1字、中央そろえ）。
+   押したとき（.hit）＝下線の上に太い一筆（.ans-t::before）を左から右へ280msで引き、滲みを濃くし、選ばなかった2つ（.dim）を .4 に下げる */
 .ans{
-  font-family:inherit;font-size:.98rem;letter-spacing:.08em;padding:13px 18px;
-  border:1px solid var(--ink-45);border-radius:2px;background:transparent;
-  color:var(--ink);cursor:pointer;transition:.25s;line-height:1.7;
+  position:relative;isolation:isolate;display:block;
+  font-family:inherit;font-size:.98rem;letter-spacing:.08em;line-height:1.7;
+  min-height:56px;padding:12px 14px 18px;
+  border:0;border-radius:0;background:none;color:var(--ink);cursor:pointer;
+  transition:opacity .18s;
 }
-/* ホバー色は本物のマウスがある端末だけ（スマホは触った位置にホバーが残留し、
-   次の質問の同じ位置のボタンに色がつくバグに見えるため） */
+.ans::before{
+  content:"";position:absolute;inset:-8px 0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 55%, rgba(29,26,21,.10), rgba(29,26,21,.033) 55%, transparent 78%);
+  opacity:.45;transition:opacity .25s;
+}
+.ans-t{position:relative;display:block}
+.ans-t::before,.ans-t::after{
+  content:"";position:absolute;left:50%;top:100%;width:calc(var(--lw,60%) + 1em);transform:translateX(-50%);
+  background:var(--ink);pointer-events:none;
+  -webkit-mask:var(--sumi-brush1) no-repeat center/100% 100%;mask:var(--sumi-brush1) no-repeat center/100% 100%;
+}
+.ans-t::after{height:11px;margin-top:2px;opacity:.35;transition:opacity .2s}
+.ans-t::before{height:15px;z-index:1;clip-path:inset(0 100% 0 0)}
+.ans:nth-child(3n+2) .ans-t::before,.ans:nth-child(3n+2) .ans-t::after{-webkit-mask-image:var(--sumi-brush2);mask-image:var(--sumi-brush2)}
+.ans:nth-child(3n) .ans-t::before,.ans:nth-child(3n) .ans-t::after{-webkit-mask-image:var(--sumi-brush3);mask-image:var(--sumi-brush3)}
+/* マウスを乗せたとき（本物のマウスがある端末だけ。スマホは触った位置にホバーが残留し、次の質問の同じ位置に効いて見えるため）：下線を濃くするだけ。動かさない */
 @media (hover:hover) and (pointer:fine){
-  .ans:hover{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+  .ans:hover:not(:disabled) .ans-t::after{opacity:.55}
 }
-/* 選んだ瞬間の「ぱっ」：端末を問わずこのクラスで明示的に付ける */
-.ans.hit{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.ans:focus-visible{outline:1.5px solid var(--ink-45);outline-offset:2px}
+.ans.hit::before{opacity:1}
+.ans.hit .ans-t::before{clip-path:inset(0 0 0 0);transition:clip-path .28s cubic-bezier(.2,.7,.3,1)}
+.ans.dim{opacity:.4}
 
 /* 小さい画面では質問もスクロール可能に（margin:autoで安全に中央寄せ） */
 #question{overflow-y:auto}
@@ -519,6 +570,8 @@ body.rv-run #result{transition:opacity .3s ease .2s}
   .word,.word.chosen{animation:none}
   .splat,.ripple,.inkbloom{display:none}
   .fade-slow{animation:rm-in .4s ease}
+  .ans.hit .ans-t::before{transition:none}
+  .picked-slot.filled::after{animation:none}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/budoux@0.6.4/bundle/budoux-ja.min.js" defer></script>
@@ -596,11 +649,11 @@ body.rv-run #result{transition:opacity .3s ease .2s}
 <!-- 庭 -->
 <div class="screen" id="garden">
   <div class="garden-header">
-    心にとまった 言の葉を 三つ
+    <span class="gh-t">心にとまった 言の葉を 三つ</span>
     <div class="picked-row">
-      <div class="picked-slot" id="slot0"></div>
-      <div class="picked-slot" id="slot1"></div>
-      <div class="picked-slot" id="slot2"></div>
+      <div class="picked-slot" id="slot0" data-n="一"></div>
+      <div class="picked-slot" id="slot1" data-n="二"></div>
+      <div class="picked-slot" id="slot2" data-n="三"></div>
     </div>
   </div>
   <div id="field"></div>
@@ -1349,7 +1402,7 @@ function startGarden(){
   score={}; AXES.forEach(a=>score[a]=0);
   picked=[]; answers=[]; qQueue=[]; qIndex=0;
   pool=[...WORDS].sort(()=>Math.random()-.5);
-  for(let i=0;i<3;i++){const s=document.getElementById("slot"+i); s.textContent=""; s.classList.remove("filled");}
+  for(let i=0;i<3;i++){const s=document.getElementById("slot"+i); s.textContent=""; s.classList.remove("filled"); delete s.dataset.len;}
   document.getElementById("field").innerHTML="";
   show("garden");
   if(floatTimer) clearInterval(floatTimer);
@@ -1365,6 +1418,8 @@ function spawnWord(){
   if(pool.length===0) pool=[...WORDS].sort(()=>Math.random()-.5);
   const w=pool.pop();
   if(picked.some(p=>p.t===w.t)) return;
+  // 補充した山から、いま庭に浮かんでいる言葉と同じ語が出たら見送る（同じ語が二つ並ばないように）
+  if([...field.querySelectorAll(".word:not(.leaving)")].some(e=>e.textContent===w.t)) return;
   // 4×4のマス目から空きマスを選んで重なりを防ぐ
   const zones=[];
   for(let zi=0;zi<16;zi++) if(!field.querySelector('[data-zone="'+zi+'"]:not(.leaving)')) zones.push(zi);
@@ -1421,7 +1476,7 @@ function pickWord(w,el){
   picked.push(w);
   for(const[k,v]of Object.entries(w.a)) score[k]+=v;
   const slot=document.getElementById("slot"+(picked.length-1));
-  slot.textContent=w.t; slot.classList.add("filled");
+  slot.textContent=w.t; slot.dataset.len=w.t.length; slot.classList.add("filled");
   if(picked.length===3){
     trackOnce("words-complete");
     clearInterval(floatTimer);
@@ -1467,22 +1522,47 @@ function renderQuestion(){
     <div class="q-word">「${word}」</div>
     <div class="q-progress">問 ${qIndex+1} ／ ${qQueue.length}</div>
     <div class="q-text">${bx(curQ.q)}</div>
-    <div class="q-answers">${curQ.ans.map((a,i)=>`<button class="ans" onclick="answer(${i})">${bx(a[0])}</button>`).join("")}</div>`;
+    <div class="q-answers">${curQ.ans.map((a,i)=>`<button class="ans" onclick="answer(${i})"><span class="ans-t">${bx(a[0])}</span></button>`).join("")}</div>`;
+  fitUnderlines(card);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>fitUnderlines(card));
 }
+/* 選択肢の下線の長さ：答えの文字のいちばん長い行の幅を測り、span に --lw として渡す（下線は +1字ぶんで中央そろえ）。
+   折り返した答えでも最長行に合わせる。行は文字の矩形（Range）を縦位置でまとめて数える */
+function fitUnderlines(root){
+  root.querySelectorAll(".ans-t").forEach(sp=>{
+    const rg=document.createRange(), rows=[];
+    const tw=document.createTreeWalker(sp,NodeFilter.SHOW_TEXT);
+    for(let n;(n=tw.nextNode());){
+      rg.selectNodeContents(n);
+      for(const r of rg.getClientRects()){
+        if(!r.width) continue;
+        const y=r.top+r.height/2, row=rows.find(o=>Math.abs(o.y-y)<6);
+        if(row){ row.l=Math.min(row.l,r.left); row.r=Math.max(row.r,r.right); }
+        else rows.push({y,l:r.left,r:r.right});
+      }
+    }
+    const w=Math.max(0,...rows.map(o=>o.r-o.l));
+    if(w) sp.style.setProperty("--lw",w.toFixed(1)+"px");
+  });
+}
+let ulTimer=0;
+addEventListener("resize",()=>{
+  clearTimeout(ulTimer);
+  ulTimer=setTimeout(()=>{ if(document.body.dataset.screen==="question") fitUnderlines(document.getElementById("qcard")); },150);
+});
 
 function answer(i){
   Oto.tap();
-  /* 選んだボタンに「ぱっ」と色を付けて一拍見せてから次へ。二度押しも防ぐ */
+  /* 選んだ答えに太い一筆（.hit）を引き、選ばなかった答えは薄くして（.dim）、引き終えてから次へ。二度押しも防ぐ */
   const btns=document.querySelectorAll("#qcard .ans");
-  btns.forEach(b=>b.disabled=true);
-  if(btns[i]) btns[i].classList.add("hit");
+  btns.forEach((b,k)=>{ b.disabled=true; b.classList.add(k===i?"hit":"dim"); });
   const[text,add,refl,h=0]=curQ.ans[i];
   /* どの言葉への、どの軸の問いへの答えか（add）も覚えておく。結果の冒頭の見立てを選ぶのに使う（端末の中だけ） */
   const{word,axis}=qQueue[qIndex];
   answers.push({text,refl,h,word,axis,add});
   for(const[k,v]of Object.entries(add)) score[k]+=v;
   qIndex++;
-  setTimeout(()=>{ if(qIndex<qQueue.length) renderQuestion(); else { trackOnce("questions-complete"); renderResult(); } },180);
+  setTimeout(()=>{ if(qIndex<qQueue.length) renderQuestion(); else { trackOnce("questions-complete"); renderResult(); } },matchMedia("(prefers-reduced-motion: reduce)").matches?250:420);
 }
 
 /* 結果の冒頭に出す答えの番号：主軸 p の問いへの答え（pに加点したもの）→ なければ p への加点がいちばん大きい答え
