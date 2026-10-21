@@ -14,11 +14,11 @@
 <meta property="og:description" content="なんでこんな気分か、自分でもよく分からない日に。言葉を三つ拾うと、墨がいまのこころを詠みます。書かずに約2分。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sumiyomi.pages.dev/">
-<meta property="og:image" content="https://sumiyomi.pages.dev/ogp-v2.png">
+<meta property="og:image" content="https://sumiyomi.pages.dev/ogp-v3.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://sumiyomi.pages.dev/ogp-v2.png">
+<meta name="twitter:image" content="https://sumiyomi.pages.dev/ogp-v3.png">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"墨詠み","url":"https://sumiyomi.pages.dev/","applicationCategory":"LifestyleApplication","operatingSystem":"Any","inLanguage":"ja","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"description":"なんでこんな気分か、自分でもよく分からない日に。浮かぶ言葉を直感で三つ拾い、短い問いに答えると、いまの気持ちを言葉にして返します。書かずに約2分・登録なし・無料。"}
 </script>
@@ -63,6 +63,8 @@
   function pending(){
     var t=document.getElementById("title");
     if(calm||!t||!t.classList.contains("active")||t.classList.contains("exiting")) return false;
+    var ov=document.getElementById("overlay");
+    if(ov&&ov.classList.contains("gift")) return false; /* 届いた札を見ているあいだは、裏のタイトルの早送りで最初の一押しを飲み込まない */
     var b=t.querySelector(".btn"), a=b&&b.getAnimations().filter(function(x){ return x.animationName; })[0];
     if(!a) return false;
     var m=a.effect.getTiming();
@@ -120,12 +122,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- 本体の書体CSS。太字（500・700）はこのページで使っていないので取り寄せない（CSSが約4割軽くなる）。太字を使うようになったら wght@400;500;700 に戻す -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Yuji+Syuku&family=Yuji+Boku&display=swap" onload="__gf(this)">
+<link rel="preload" as="style" id="gf-main" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Yuji+Syuku&family=Yuji+Boku&display=swap" onload="__gf(this)">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Yuji+Syuku&family=Yuji+Boku&display=swap"></noscript>
 <!-- タイトル画面だけの小さな書体CSS（題字の3文字／リード文などの約54文字）。上の大きなCSSより後ろに置く＝同じ文字では、こちらが先に使われる。
      タイトル画面の文言を変えたら、下の text の文字も足す（足し忘れても表示は崩れない。その文字だけ大きなCSSの書体が後から届く） -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Yuji+Boku&text=%E5%A2%A8%E8%A9%A0%E3%81%BF&display=swap" onload="__gf(this,'62px Yuji Boku','墨詠み')" onerror="__gfe()">
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&text=%202%E3%80%81%E3%80%82%E3%81%82%E3%81%84%E3%81%8B%E3%81%8C%E3%81%8F%E3%81%93%E3%81%95%E3%81%97%E3%81%99%E3%81%9A%E3%81%9F%E3%81%A0%E3%81%A3%E3%81%A4%E3%81%A6%E3%81%AA%E3%81%AB%E3%81%AE%E3%81%B6%E3%81%B8%E3%81%BE%E3%81%BF%E3%82%88%E3%82%8B%E3%82%8D%E3%82%92%E4%B8%89%E5%85%A5%E5%88%86%E5%8D%8A%E5%A2%A8%E5%A4%95%E5%AE%B5%E5%BA%AD%E6%84%9F%E6%8B%BE%E6%98%BC%E6%9B%B8%E6%9C%9D%E6%B5%AE%E7%99%BB%E7%9B%B4%E7%B4%84%E7%B4%99%E8%91%89%E8%A8%80%E8%A9%A0%E8%AA%B0%E8%B4%88%E9%8C%B2%E9%9F%B3%E2%94%80&display=swap" onload="__gf(this,'16px Shippori Mincho',' 2、。あいかがくこさしすずただっつてなにのぶへまみよるろを三入分半墨夕宵庭感拾昼書朝浮登直約紙葉言詠誰贈録音─')" onerror="__gfe()">
+<script>
+/* 届いた札のリンク（?f=…）の値は取り出して、住所からは消す。ページ計測（count.js）は location.search をそのまま送るので、
+   計測の読み込みより前に消しておく（ほかの ?motion=1 などはそのまま）。値は本体の終わりの届いた札の処理が window.__sumiF から受け取る */
+(function(){ try{
+  var u=new URL(location.href), fv=u.searchParams.get("f"); /* 関数の中に置いて、u・fv をページ全体の変数にしない */
+  if(fv!==null){ window.__sumiF=fv; u.searchParams.delete("f"); history.replaceState(history.state,"",u.pathname+u.search+u.hash); }
+  /* 共有のリンクは /todoku/?f=… から本体の /?f=… へ移って届く。移った先の document.referrer は /todoku/?f=…（同じサイト内の移動は住所が全部残る）で、
+     計測は referrer も送るので、?f= を含むときは「?」の手前だけを計測に渡す */
+  if(/[?&]f=/.test(document.referrer)) window.goatcounter=Object.assign(window.goatcounter||{},{referrer:document.referrer.replace(/[?#].*$/,"")});
+}catch(e){} })();
+</script>
 <script data-goatcounter="https://fuyuto.goatcounter.com/count" async src="https://gc.zgo.at/count.js" onload="window.flushTracks?.()"></script>
 <style>
 :root{
@@ -619,6 +632,47 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .overlay-sub button{background:none;border:none;color:#f0ede4;font-family:inherit;font-size:.78rem;
   letter-spacing:.2em;cursor:pointer;border-bottom:1px solid rgba(240,237,228,.4);padding-bottom:2px}
 .overlay-sub button:hover{color:var(--shu);border-color:var(--shu)}
+/* 札のリンクの一行：「札で返す」（届いた札から来た人だけ・共有ボタンの上）／「送った相手には〜」（共有ボタンの下） */
+/* 共有ボタンの上に一行ずつ（札で返す・相手には〜）が加わるぶん、背の低い画面では札を少し小さくして、ボタンまでが一画面に収まるようにする（背の高い画面は今までの 66vh のまま） */
+#overlay img{max-height:min(66vh,max(200px,calc(100svh - 276px)))}
+.return-line{color:#f0ede4;font-size:.86rem;letter-spacing:.3em;text-indent:.3em;white-space:nowrap}
+.share-note{max-width:min(92vw,360px);color:#f0ede4;font-size:.74rem;line-height:1.85;letter-spacing:.04em;text-align:center;text-wrap:pretty}
+#overlay.writing .return-line,#overlay.writing .share-note{opacity:0;visibility:hidden}
+.return-line,.share-note{transition:opacity .5s ease}
+/* ===== 届いた札（?f= で開いた人に、タイトルの前に出す）=====
+   札の演出は自分の札と同じ部品（fudaParts / fudaWrite）。保存・共有のボタンは出さず、仕上がったら問いとボタンが現れる */
+.gift-head,.gift-foot{display:none;flex-direction:column;align-items:center;transition:opacity .5s ease}
+#overlay.gift .gift-head,#overlay.gift .gift-foot{display:flex}
+#overlay.gift .hint,#overlay.gift .icon-row,#overlay.gift .overlay-sub,#overlay.gift .return-line,#overlay.gift .share-note{display:none}
+#overlay.gift.writing .gift-head,#overlay.gift.writing .gift-foot{opacity:0;visibility:hidden}
+#overlay.gift:not(.fl-light){background:rgba(29,26,21,.78)}
+#overlay.gift{overflow-y:auto;overflow-x:hidden;justify-content:flex-start;overscroll-behavior:contain}
+#overlay.gift.writing{overflow:hidden}
+#overlay.gift>.gift-head{margin-top:auto}
+#overlay.gift>.gift-foot{margin-bottom:auto}
+.gift-head{gap:6px;max-width:min(92vw,360px);text-align:center;color:#f0ede4}
+.gift-tag{font-size:.78rem;letter-spacing:.4em;text-indent:.4em;color:rgba(240,237,228,.86)}
+.gift-line{font-size:.88rem;line-height:1.9;letter-spacing:.04em;text-wrap:balance}
+.gift-foot{gap:14px;color:#f0ede4;text-align:center}
+.gift-ask{font-size:.98rem;letter-spacing:.08em;line-height:1.8}
+.gift-foot .btn{padding:13px 34px;font-size:.96rem;white-space:nowrap;color:#f0ede4;border-color:rgba(240,237,228,.65);background:rgba(240,237,228,.1);
+  transition:background-color .35s,border-color .35s,color .35s} /* .btn の transition:.35s は visibility にもかかり、現れた直後に focus() が効かないので、色だけにする */
+.gift-foot .btn:hover{background:var(--shu);border-color:var(--shu);color:#fff}
+.gift-close{background:none;border:none;color:#f0ede4;font-family:inherit;font-size:.78rem;letter-spacing:.2em;cursor:pointer;border-bottom:1px solid rgba(240,237,228,.4);padding:8px 2px 4px;min-height:36px}
+.gift-close:hover{color:var(--shu);border-color:var(--shu)}
+#overlay.gift img{max-height:min(60vh,max(200px,calc(100svh - 330px)))}
+/* 背の低い画面（高さ700px以下）：上の説明・問い・ボタンを詰めて、そのぶん札を大きく（320×568 で札が小さく託宣が読みにくかった） */
+@media (max-height:700px){
+  #overlay.gift{gap:12px;padding-top:14px;padding-bottom:14px}
+  .gift-head{gap:3px}
+  .gift-tag{font-size:.7rem}
+  .gift-line{font-size:.8rem;line-height:1.6}
+  .gift-foot{gap:8px}
+  .gift-ask{font-size:.9rem;line-height:1.5}
+  .gift-foot .btn{padding:9px 28px;font-size:.92rem}
+  .gift-close{min-height:30px;padding:4px 2px 2px}
+  #overlay.gift img{max-height:min(72vh,max(200px,calc(100svh - 232px)))}
+}
 
 .fade-slow{animation:fadein 1.6s ease}
 @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -787,8 +841,19 @@ body.rv-run #result{transition:opacity .3s ease .2s}
 
 <!-- 結果札オーバーレイ -->
 <div id="overlay">
+  <!-- 届いた札（?f= で開いたときだけ表示。字は固定の文だけで、リンクの中身は入れない） -->
+  <div class="gift-head" id="gifthead">
+    <p class="gift-tag">届いた札です</p>
+    <p class="gift-line"><budoux-ja>送ってくれた人が拾った<span class="nw">三つの言葉</span>から、墨がその人の<span class="nw">こころを詠みました。</span></budoux-ja></p>
+  </div>
   <div class="fuda-wrap" id="fudawrap"><img id="fuda" alt="結果札"></div>
   <div class="hint">長押し・右クリックでも保存できます</div>
+  <div class="return-line" id="returnline" hidden>札で返す</div>
+  <p class="share-note" id="sharenote">
+    <span id="sn-link"><budoux-ja>相手には、<span class="nw">三つの言葉・題・託宣</span>が見えます</budoux-ja></span>
+    <span id="sn-noracle" hidden><budoux-ja>相手には、<span class="nw">三つの言葉と題</span>が見えます</budoux-ja></span>
+    <span id="sn-own" hidden><budoux-ja>この札は、まず<span class="nw">自分のために</span>持っていてもいいよ</budoux-ja></span>
+  </p>
   <div class="icon-row">
     <button class="icon-btn save" onclick="saveFuda()" aria-label="札を保存" title="札を保存">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -804,6 +869,11 @@ body.rv-run #result{transition:opacity .3s ease .2s}
   <div class="overlay-sub">
     <button onclick="retryGarden()">もう一度試す</button>
     <button onclick="closeFuda()">閉じる</button>
+  </div>
+  <div class="gift-foot" id="giftfoot">
+    <p class="gift-ask">あなたなら、どの三つを拾う？</p>
+    <button class="btn gift-play" type="button" onclick="giftPlay()">わたしも三つ拾う</button>
+    <button class="gift-close" type="button" onclick="giftClose()">閉じる</button>
   </div>
 </div>
 
@@ -2051,7 +2121,7 @@ function renderResult(){
   const {dom,st}=answerTags(), T=st?TAGTXT[st]:null;
   /* 重いときは、今日の一歩（結果画面）と札の step を、がんばらせない「やさしい版」に替える */
   const G=T||BASE[p]; // 今日の一歩の出どころ（答えの型の文、型がなければ主軸の文）
-  LAST={p,s,title,musubi,words:picked.map(w=>w.t),date,oracles:answers.map(a=>a.refl),oi:core,step:heavy?G.gentleStep:G.step};
+  LAST={p,s,title,musubi,words:picked.map(w=>w.t),date,oracles:answers.map(a=>a.refl),oi:core,step:heavy?G.gentleStep:G.step,heavy};
   /* 型が重ならないときは、まず crossThread（型の付いた答え2つを映す一文・第13回）。出せなければ、次の軸の糸 */
   /* 三つに通う糸：答えの型が重なっていればその型の一文。なければ、拾った語の a と答えの add の軸ごとの合計（＝score）のうち、主軸を除いて最大の軸 x が3以上のときだけ */
   const x=sorted.find(e=>e[0]!==p);
@@ -2164,10 +2234,11 @@ function kanjiNum(n){
   if(n<10) return d[n];
   return (n>=20?d[Math.floor(n/10)]:"")+"十"+d[n%10];
 }
-function kanjiDate(){
-  const n=new Date(), d="〇一二三四五六七八九";
-  const y=[...String(n.getFullYear())].map(c=>d[c]).join("");
-  return `${y}年 ${kanjiNum(n.getMonth()+1)}月${kanjiNum(n.getDate())}日`;
+/* 日付は今日。届いた札のときだけ、送った日 {y,m,d} を渡す */
+function kanjiDate(o){
+  const n=new Date(), d="〇一二三四五六七八九", Y=o?o.y:n.getFullYear(), M=o?o.m:n.getMonth()+1, D=o?o.d:n.getDate();
+  const y=[...String(Y)].map(c=>d[c]).join("");
+  return `${y}年 ${kanjiNum(M)}月${kanjiNum(D)}日`;
 }
 /* 文節に区切る（BudouX。読み込めないときは句読点で区切る） */
 let _budoux=null;
@@ -2236,14 +2307,17 @@ function evenBox(x,y,w,h){
   const x1=Math.min(FW,Math.ceil((x+w)/2)*2), y1=Math.min(FH,Math.ceil((y+h)/2)*2);
   return [x0,y0,x1-x0,y1-y0];
 }
-async function fudaParts(){
-  const cx=FW/2, P=POET[LAST.p], S=POET[LAST.s], parts=[], no=`第${kanjiNum(fudaNo(LAST.p,LAST.s))}番`, oracle=LAST.oracles[LAST.oi]||"";
+/* D＝札に載せるもの {p,s,words,oracle,step,date,gift}。省くと、いまの結果（LAST）の札。
+   届いた札では step を空にして「今日の一歩」を描かず、date は送った日（無効なら null＝日付なし）、oracle が空なら託宣の段も描かない */
+async function fudaParts(D){
+  D=D||{p:LAST.p,s:LAST.s,words:LAST.words,oracle:LAST.oracles[LAST.oi]||"",step:LAST.step};
+  const cx=FW/2, P=POET[D.p], S=POET[D.s], parts=[], no=`第${kanjiNum(fudaNo(D.p,D.s))}番`, oracle=D.oracle, dateStr=D.date===null?"":kanjiDate(D.date);
   /* 書体は文字の範囲ごとに分けて届くので、札に載る字を渡して全部そろってから描く
      （字を渡さないと、まだ届いていない字だけ別の書体で描かれることがあった） */
   await Promise.all([
-    document.fonts.load('140px "Yuji Boku"',no+P+S+"のなかの"+LAST.words.join("")+SEAL[LAST.p]),
+    document.fonts.load('140px "Yuji Boku"',no+P+S+"のなかの"+D.words.join("")+SEAL[D.p]),
     document.fonts.load('64px "Yuji Syuku"',oracle),
-    document.fonts.load('34px "Shippori Mincho"',kanjiDate()+"墨詠み御籤― 託宣拾った言の葉今日の一歩"+LAST.step),
+    document.fonts.load('34px "Shippori Mincho"',dateStr+"墨詠み御籤― 託宣拾った言の葉今日の一歩"+D.step),
   ]);
   const hs=(ctx,t,x,y,size,font,color,ls)=>drawSpaced(ctx,t,x,y,size,font,color,ls);
   const add=(k,box,draw)=>parts.push({k,box:evenBox(...box),draw});
@@ -2263,7 +2337,7 @@ async function fudaParts(){
     });
     ctx.strokeStyle="rgba(176,58,32,.8)"; ctx.lineWidth=4; ctx.strokeRect(30,30,FW-60,FH-60);
     ctx.lineWidth=1.5; ctx.strokeRect(42,42,FW-84,FH-84);
-    hs(ctx,kanjiDate(),cx,70,22,'"Shippori Mincho"',F_REDA,4);
+    if(dateStr) hs(ctx,dateStr,cx,70,22,'"Shippori Mincho"',F_REDA,4);
     hs(ctx,"墨詠み御籤",cx,112,34,'"Shippori Mincho"',F_RED,18);
     ctx.strokeStyle="rgba(176,58,32,.6)"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(70,150); ctx.lineTo(FW-70,150); ctx.stroke();
   });
@@ -2285,8 +2359,8 @@ async function fudaParts(){
   const nS=vchars("tS",S,cx-110,270,tsize(S,96),'"Yuji Boku"',F_INK,6);
   // 託宣（見出しは朱、中身は黒）
   const oy=FH/3+70, top=oy+50, bottom=FH*2/3-30;
-  add("oHead",[60,oy-30,FW-120,60],ctx=>hs(ctx,"― 託 宣 ―",cx,oy,32,'"Shippori Mincho"',F_RED,6));
-  const lay=packOracle(await phrases(oracle),FW-150,bottom-top);
+  if(oracle) add("oHead",[60,oy-30,FW-120,60],ctx=>hs(ctx,"― 託 宣 ―",cx,oy,32,'"Shippori Mincho"',F_RED,6));
+  const lay=oracle?packOracle(await phrases(oracle),FW-150,bottom-top):null;
   if(lay){
     const start=cx+lay.colW*(lay.cols.length-1)/2;
     lay.cols.forEach((t,i)=>vcol("o"+i,t,start-i*lay.colW,top,lay.size,'"Yuji Syuku"',F_INK,lay.gap));
@@ -2294,7 +2368,7 @@ async function fudaParts(){
   // 拾った言の葉。言の葉は「今日の一歩」の見出しにかからない長さに収める（縦195pxまで）
   const by=FH*2/3+60, tz=[cx+180,cx,cx-180];
   add("wHead",[60,by-28,FW-120,56],ctx=>hs(ctx,"拾った言の葉",cx,by,30,'"Shippori Mincho"',F_RED,10));
-  const slots=LAST.words.map((w,i)=>{
+  const slots=D.words.map((w,i)=>{
     const ws=Math.min(64,Math.floor(195/[...w].length)-4);
     add("w"+i,[tz[i]-Math.max(12,ws*.75),by+50,Math.max(24,ws*1.5),35+vLen(w,ws,4)+ws*.3],ctx=>{
       ctx.fillStyle="rgba(29,26,21,.7)"; ctx.beginPath(); ctx.arc(tz[i],by+60,5,0,7); ctx.fill();
@@ -2303,28 +2377,31 @@ async function fudaParts(){
     return {w,x:tz[i],y:by+85,size:ws,h:vLen(w,ws,4)};
   });
   // 今日の一歩：文節で折り返す。幅は右下の落款にかからない範囲（中央から左右180px）
-  add("stHead",[60,by+274,FW-120,52],ctx=>hs(ctx,"今日の一歩",cx,by+300,28,'"Shippori Mincho"',F_RED,8));
-  const STEP_FONT='"Shippori Mincho"', stepW=360, mctx=document.createElement("canvas").getContext("2d"), stepPh=await phrases(LAST.step);
-  let stepSize=32, lines;
-  for(;stepSize>=26;stepSize-=2){
-    mctx.font=stepSize+"px "+STEP_FONT;
-    const wOf=t=>mctx.measureText(t).width+2*(t.length-1);
-    lines=[]; let cur="";
-    for(const w of stepPh){
-      if(!cur||wOf(cur+w)<=stepW){ cur+=w; } else { lines.push(cur); cur=w; }
+  let lines=[];
+  if(D.step){
+    add("stHead",[60,by+274,FW-120,52],ctx=>hs(ctx,"今日の一歩",cx,by+300,28,'"Shippori Mincho"',F_RED,8));
+    const STEP_FONT='"Shippori Mincho"', stepW=360, mctx=document.createElement("canvas").getContext("2d"), stepPh=await phrases(D.step);
+    let stepSize=32;
+    for(;stepSize>=26;stepSize-=2){
+      mctx.font=stepSize+"px "+STEP_FONT;
+      const wOf=t=>mctx.measureText(t).width+2*(t.length-1);
+      lines=[]; let cur="";
+      for(const w of stepPh){
+        if(!cur||wOf(cur+w)<=stepW){ cur+=w; } else { lines.push(cur); cur=w; }
+      }
+      if(cur) lines.push(cur);
+      if(lines.length<=3&&lines.every(l=>wOf(l)<=stepW)) break;
     }
-    if(cur) lines.push(cur);
-    if(lines.length<=3&&lines.every(l=>wOf(l)<=stepW)) break;
+    lines.forEach((l,i)=>add("st"+i,[30,by+319+i*42,FW-60,52],ctx=>hs(ctx,l,cx,by+345+i*42,stepSize,STEP_FONT,F_INK,2)));
   }
-  lines.forEach((l,i)=>add("st"+i,[30,by+319+i*42,FW-60,52],ctx=>hs(ctx,l,cx,by+345+i*42,stepSize,STEP_FONT,F_INK,2)));
   // 落款
   add("seal",[FW-164,FH-164,128,128],ctx=>{
     ctx.translate(FW-100,FH-100); ctx.rotate(-.06); ctx.fillStyle=F_RED;
     ctx.beginPath(); ctx.roundRect(-42,-42,84,84,8); ctx.fill();
     ctx.fillStyle="#f8efe3"; ctx.font='50px "Yuji Boku"'; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText(SEAL[LAST.p],0,3);
+    ctx.fillText(SEAL[D.p],0,3);
   });
-  return {parts,slots,cols:lay?lay.cols.length:0,steps:lines.length,nP,nNo,nS,by};
+  return {parts,slots,cols:lay?lay.cols.length:0,steps:lines.length,nP,nNo,nS,by,gift:!!D.gift};
 }
 /* 部品を1枚に描く（box を渡すとその範囲だけの層になる） */
 function drawParts(parts,box){
@@ -2340,9 +2417,11 @@ async function makeFuda(){
   FL.busy=true;
   Oto.tap(); // 札を描き終えるまで遅い端末だと1秒近くかかるので、押した手応えを先に返す
   trackOnce("make-fuda");
+  if(fromGift) trackOnce("fuda-open-made");
   try{
     const F=await fudaParts(), img=document.getElementById("fuda");
     if(document.body.dataset.screen!=="result") return; // 書体を待つあいだに庭へ戻っていたら出さない
+    setShareLines();
     img.src=drawParts(F.parts).toDataURL("image/png");
     try{ await img.decode(); }catch(e){}
     if(!img.complete) await new Promise(res=>{ img.onload=img.onerror=res; });
@@ -2354,11 +2433,11 @@ async function makeFuda(){
     }else fudaWrite(F);
   }finally{ FL.busy=false; }
 }
-/* 札が出たら、キーボードの位置を裏の「札をつくる」から保存ボタンへ移す（Enter で札を作り直さないように） */
+/* 札が出たら、キーボードの位置を裏の「札をつくる」から保存ボタンへ移す（Enter で札を作り直さないように）。届いた札では「わたしも三つ拾う」へ */
 function focusFudaSave(){
   /* ボタンは見えるようになる瞬間にまだ「隠れている」扱い（.icon-btn の transition が visibility にもかかる）なので、一呼吸おく */
   setTimeout(()=>{
-    const ov=document.getElementById("overlay"), b=ov.querySelector(".icon-btn.save");
+    const ov=document.getElementById("overlay"), b=ov.querySelector(ov.classList.contains("gift")?".gift-play":".icon-btn.save");
     if(b&&ov.classList.contains("active")&&!ov.contains(document.activeElement)) b.focus({preventScroll:true});
   },80);
 }
@@ -2367,7 +2446,8 @@ function focusFudaSave(){
    触る・キーを押すとすぐ仕上がる。2回目からは約半分の時間 */
 function fudaWrite(F){
   const ov=document.getElementById("overlay"), wrap=document.getElementById("fudawrap");
-  let seen=false; try{ seen=localStorage.getItem("sumiyomi-fuda")==="1"; }catch(e){}
+  /* 届いた札（F.gift）は「自分の札を書くのは何回目か」の記憶（sumiyomi-fuda）を読まず・書かず、飛ばした数にも入れない */
+  let seen=false; try{ seen=!F.gift&&localStorage.getItem("sumiyomi-fuda")==="1"; }catch(e){}
   const k=seen?.5:1, T=ms=>ms*k, anims=[], timers=[], extras=[];
   const A=(el,kf,delay,dur,o)=>{ const a=el.animate(kf,Object.assign({delay:T(delay),duration:T(dur),easing:"ease-out",fill:"both"},o)); anims.push(a); return a; };
   const at=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
@@ -2459,10 +2539,10 @@ function fudaWrite(F){
     extras.forEach(e=>e.remove());
     stampNow(); reveal(); ov.classList.remove("fl-light");
     requestAnimationFrame(()=>layers.remove());
-    try{ localStorage.setItem("sumiyomi-fuda","1"); }catch(e){}
+    if(!F.gift) try{ localStorage.setItem("sumiyomi-fuda","1"); }catch(e){}
   };
   /* 飛ばす：click で受ける（pointerdown だと、指を離した所に現れたボタンが押されてしまう） */
-  const skip=()=>{ if(FL.run!==run||revealed) return; trackOnce("fuda-skip"); end(); };
+  const skip=()=>{ if(FL.run!==run||revealed) return; if(!F.gift) trackOnce("fuda-skip"); end(); };
   /* キー：修飾キーだけ・組み合わせ・Tab では飛ばさない。Enter・空白・Esc は裏のボタンに届かないよう止める */
   const skipKey=e=>{
     if(e.ctrlKey||e.metaKey||e.altKey||["Tab","Shift","Control","Alt","Meta","CapsLock"].includes(e.key)) return;
@@ -2552,9 +2632,74 @@ async function saveFuda(){
   a.download="sumiyomi_"+LAST.title+".png";
   a.click();
 }
+/* ===== 札のリンク（?f=）=====
+   リンクには字そのものを入れない。入れるのは「版・主軸・副軸・三語の番号（WORDS の位置）・託宣の印・日付」だけ。
+   受け取る側はアプリの表と照らして、表にあるものだけを札に描く（アプリの外の字は札に載らない）。
+   重い語を拾った札も描く。載せないのは、重い答え（h=1・h=2）に返した託宣（題と三語だけにする）と、今日の一歩。重い日（isHeavy）の結果ではリンク自体を作らない。
+   形：1.主軸.副軸.語.語.語.託宣の印.年月日　例 1.3.0.14.5.30.wgbo7y.20261021（軸は AXES の番号。託宣の印は refl の FNV-1a 32bit を36進に）
+   共有の文に入れる住所は https://sumiyomi.pages.dev/todoku/?f=…（todoku/index.html が本体の /?f=… へ送る。本体は今までどおり /?f= で届いた札を出す） */
+const FUDA_VER="1", FUDA_MAXLEN=120;
+const fnv36=s=>{ let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193); } return (h>>>0).toString(36); };
+/* 託宣の印 → {文, 重い答えか}。アプリの答えの文（refl）が全部入る。印が重なった文は使わない（bad） */
+let _reflMap=null;
+function reflMap(){
+  if(_reflMap) return _reflMap;
+  _reflMap=new Map();
+  for(const list of Object.values(QUESTIONS)) for(const q of list) for(const a of q.ans){
+    const refl=a[2], heavy=!!a[3], k=fnv36(refl), old=_reflMap.get(k);
+    if(!old) _reflMap.set(k,{t:refl,heavy});
+    else if(old.t===refl) old.heavy=old.heavy||heavy;
+    else old.bad=true;
+  }
+  return _reflMap;
+}
+const ymdOk=(y,m,d)=>y>=2026&&y<=2099&&m>=1&&m<=12&&d>=1&&d<=new Date(y,m,0).getDate();
+/* リンクの中身 → 札に描くもの。題か三語が合わないときは null（札を出さずふつうの入口へ）。
+   託宣の印か日付が合わない・託宣が重い答えの文のときは、託宣なし（oracle が空）の「題と三語だけの札」 */
+function decodeFuda(raw){
+  if(typeof raw!=="string"||raw.length>FUDA_MAXLEN||!/^[0-9a-z.]+$/.test(raw)) return null;
+  const a=raw.split(".");
+  if(a.length!==8||a[0]!==FUDA_VER) return null;
+  const idx=x=>/^(0|[1-9]\d?)$/.test(x)?+x:-1;
+  const p=idx(a[1]), s=idx(a[2]), wi=[a[3],a[4],a[5]].map(idx);
+  if(p<0||s<0||p>=AXES.length||s>=AXES.length||p===s) return null;
+  if(wi.some(i=>i<0||i>=WORDS.length)||new Set(wi).size<3) return null;
+  const words=wi.map(i=>WORDS[i].t);
+  const hit=/^[0-9a-z]{1,7}$/.test(a[6])?reflMap().get(a[6]):null, known=hit&&!hit.bad&&!hit.heavy;
+  const m=/^(\d{4})(\d{2})(\d{2})$/.exec(a[7]);
+  const date=m&&ymdOk(+m[1],+m[2],+m[3])?{y:+m[1],m:+m[2],d:+m[3]}:null;
+  return {p:AXES[p],s:AXES[s],words,date,oracle:known&&date?hit.t:""};
+}
+/* いまの結果の札のリンク {url, oracle（託宣がリンクの札に載るか）}。重い日は null＝入口のURLを使う。
+   札に載せた見立てが重い答え（h=1・h=2）に返す文のときは、リンクは作るが託宣は載らない（題と三語だけ） */
+function fudaLink(){
+  if(!LAST||LAST.heavy) return null;
+  const wi=LAST.words.map(t=>WORDS.findIndex(w=>w.t===t)), o=LAST.oracles[LAST.oi]||"", [y,m,d]=LAST.date.split(".");
+  if(wi.includes(-1)||!o) return null;
+  const raw=[FUDA_VER,AXES.indexOf(LAST.p),AXES.indexOf(LAST.s),...wi,fnv36(o),y+m.padStart(2,"0")+d.padStart(2,"0")].join(".");
+  const g=decodeFuda(raw);
+  return g?{url:APP_URL+"todoku/?f="+raw, oracle:g.oracle===o}:null; // 共有の文に入れる住所は /todoku/（札が届いた表紙。開くと本体の /?f= へ移る）
+}
+/* 届いた札から来た人か（自分の札を作り終えたとき「札で返す」を出す・数える） */
+let fromGift=false;
+/* 共有ボタンの近くの一行と「札で返す」。リンクが作れるかどうかで切り替える */
+function setShareLines(){
+  const L=fudaLink();
+  document.getElementById("sn-link").hidden=!(L&&L.oracle);
+  document.getElementById("sn-noracle").hidden=!(L&&!L.oracle);
+  document.getElementById("sn-own").hidden=!!L;
+  document.getElementById("returnline").hidden=!(fromGift&&L);
+}
+/* 共有のたびにリンクを作り直す（札に載せる見立てを選び直せるので）。「札で返す」の状態での共有はここで数える */
+function shareLinkNow(){
+  const L=fudaLink();
+  if(L&&fromGift) trackOnce("fuda-return");
+  return L?L.url:null;
+}
 async function shareFuda(){
   const src=document.getElementById("fuda").src;
-  const text=`いまのこころ：『${LAST.title}』\n#墨詠み で、こころの見立てをもらいました\n${APP_URL}`;
+  const link=shareLinkNow();
+  const text=link?`いまのこころ：『${LAST.title}』\n#墨詠み の札が届きます\n${link}`:`いまのこころ：『${LAST.title}』\n#墨詠み で、こころの見立てをもらいました\n${APP_URL}`;
   trackOnce("share-ig");
   if(navigator.canShare){
     try{
@@ -2575,15 +2720,15 @@ async function shareFuda(){
   saveFuda();
 }
 function shareX(){
-  const words=LAST.words.map(t=>"「"+t+"」").join("");
+  const words=LAST.words.map(t=>"「"+t+"」").join(""), link=shareLinkNow();
   trackOnce("share-x");
-  const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて #墨詠み`;
-  window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(APP_URL),"_blank");
+  const text=link?`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nわたしの札は、ここで書かれていきます #墨詠み`:`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて #墨詠み`;
+  window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(link||APP_URL),"_blank");
 }
 function shareLine(){
-  const words=LAST.words.map(t=>"「"+t+"」").join("");
+  const words=LAST.words.map(t=>"「"+t+"」").join(""), link=shareLinkNow();
   trackOnce("share-line");
-  const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて\n${APP_URL}`;
+  const text=link?`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nわたしの札は、ここで書かれていきます #墨詠み\n${link}`:`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて\n${APP_URL}`;
   window.open("https://line.me/R/msg/text/?"+encodeURIComponent(text),"_blank");
 }
 function closeFuda(){
@@ -2599,6 +2744,68 @@ function shareApp(){
   if(navigator.share){ navigator.share({title:"墨詠み",text,url:APP_URL}); }
   else{ navigator.clipboard.writeText(text+"\n"+APP_URL).then(()=>alert("紹介文をコピーしました")); }
 }
+
+/* ===== 届いた札（?f= つきで開いた人に、タイトルの前に出す）=====
+   リンクの中身は decodeFuda でアプリの表と照らしたものだけ。字は canvas（fudaParts）と alt 属性でだけ使う（innerHTML には入れない）。
+   札の演出は自分の札と同じ fudaWrite。保存・共有のボタンは出さない（CSS の #overlay.gift）。仕上がると問いとボタンが現れる */
+function endGift(){
+  const ov=document.getElementById("overlay"), ttl=document.getElementById("title");
+  closeFuda();
+  ov.classList.remove("gift");
+  ["role","aria-modal","aria-label"].forEach(a=>ov.removeAttribute(a));
+  document.getElementById("fuda").alt="結果札";
+  giftBehind(false);
+  const b=ttl.querySelector(".btn");
+  if(b&&ttl.classList.contains("active")) b.focus({preventScroll:true});
+}
+/* 札のあいだは、裏のタイトルと音の栓に触れない（クリックもキーボードも） */
+function giftBehind(lock){ document.querySelectorAll("#title,#otokit").forEach(e=>{ e.inert=lock; }); }
+function giftPlay(){ trackOnce("fuda-open-play"); endGift(); }
+function giftClose(){ endGift(); }
+/* 本体の大きな書体CSS（head の preload → __gf で rel=stylesheet になる）が効くまで待つ（50ms刻み・上限6秒）。
+   ページを開いた直後は、題字用の小さなCSS（「墨詠み」の3字だけ）しか効いておらず、ほかの字が代わりの書体で札に描かれてしまう */
+async function fontsCssReady(){
+  const l=document.getElementById("gf-main"), t0=performance.now(); // 住所の文字で探すと、太字を足して住所を変えたときに見つからず、待たずに描いてしまう
+  while(l&&!(l.rel==="stylesheet"&&l.sheet)&&performance.now()-t0<6000) await new Promise(r=>setTimeout(r,50));
+}
+async function openGift(g){
+  const ov=document.getElementById("overlay"), ttl=document.getElementById("title"), img=document.getElementById("fuda");
+  ov.classList.add("gift");
+  ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true"); ov.setAttribute("aria-label","届いた札");
+  giftBehind(true);
+  const giveUp=setTimeout(()=>{ if(!ov.classList.contains("active")) endGift(); },8000); // 書体が届かないときは、ふつうの入口へ
+  try{
+    await fontsCssReady();
+    const F=await fudaParts({p:g.p,s:g.s,words:g.words,oracle:g.oracle,step:"",date:g.date,gift:true});
+    if(!ov.classList.contains("gift")) return; // 打ち切り（giveUp）でふつうの入口へ戻したあと。ここで endGift を呼ぶと、そのあと開いた自分の札まで閉じてしまう
+    if(document.body.dataset.screen||ttl.dataset.exited) return endGift(); // 念のため：庭へ入っていたら出さない（待つあいだはタイトルを inert にしているので、ふつうは起きない）
+    img.alt=`届いた札「${POET[g.p]}のなかの${POET[g.s]}」。拾った言の葉は${g.words.join("、")}。`+(g.oracle?`託宣は「${g.oracle}」`:"");
+    img.src=drawParts(F.parts).toDataURL("image/png");
+    try{ await img.decode(); }catch(e){}
+    if(!img.complete) await new Promise(res=>{ img.onload=img.onerror=res; });
+    if(!ov.classList.contains("gift")) return;
+    clearTimeout(giveUp);
+    fromGift=true;
+    trackOnce("fuda-open");
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches||!img.naturalWidth){
+      Oto.stamp();
+      ov.classList.add("active");
+      focusFudaSave();
+    }else fudaWrite(F);
+  }catch(e){ clearTimeout(giveUp); if(ov.classList.contains("gift")) endGift(); }
+}
+(function(){
+  const f=window.__sumiF;
+  if(typeof f!=="string") return; // ふつうの遊び方（?f なし）は何も変えない
+  const g=decodeFuda(f);
+  if(!g) return;
+  /* 仕上がった届いた札は Esc でも閉じる（書いているあいだの Esc は fudaWrite の skipKey が受けて「すぐ仕上げる」になり、ここへは届かない） */
+  addEventListener("keydown",e=>{
+    const ov=document.getElementById("overlay");
+    if(e.key==="Escape"&&ov.classList.contains("gift")&&ov.classList.contains("active")&&!ov.classList.contains("writing")){ e.preventDefault(); giftClose(); }
+  });
+  openGift(g);
+})();
 </script>
 </body>
 </html>
