@@ -2163,30 +2163,38 @@ function fudaWrite(F){
     const a=sv.animate([{transform:"translate(-50%,-50%) scale(.3)",opacity:0},{opacity:1,offset:.22},{transform:"translate(-50%,-50%) scale(1)",opacity:0}],{duration:T(dur),easing:"ease-out",fill:"both"});
     anims.push(a); a.onfinish=()=>sv.remove();
   });
-  /* 墨の筋：着地した言の葉から題の書き出しへ一本上る。出発点が太く軽くにじみ、先へ細くなる筆の線
-     （太さが一定の線だと髪の毛やひっかき傷に見えた。第11回の小会議）。先細りの帯を、曲線に沿って伸びるマスクで見せる */
+  /* 墨の筋：着地した言の葉の墨だまりから題の書き出しへ一本上る。根元を押して太く濃く、すぐ細り、先は墨が尽きて薄い筆の線
+     （太さが一定の線だと髪の毛やひっかき傷に、太さの差が小さい線だとペンに、伸びる先が太い棒だとカーソルに見えた。第11回の小会議）。
+     伸びているあいだも筆先はいつも細く尖るよう、根元から今の筆先までの先細りの帯を毎コマ描き直す */
   const thread=(x0,y0,x1,y1,d,dur)=>at(d,()=>{
     const [ax,ay]=pt(x0,y0), [bx,bt]=pt(x1,y1), c1=[ax-34*u,ay-(ay-bt)*.35], c2=[bx+26*u,bt+(ay-bt)*.42];
     const P=t=>{ const m=1-t; return [m*m*m*ax+3*m*m*t*c1[0]+3*m*t*t*c2[0]+t*t*t*bx, m*m*m*ay+3*m*m*t*c1[1]+3*m*t*t*c2[1]+t*t*t*bt]; };
-    const band=(w0,w1)=>{ // 太さ w0→w1（札の単位）の先細りの帯
-      const L=[], R=[], N=32;
+    const band=(w0,w1,k,s)=>{ // 太さ w0→w1（札の単位）の帯を根元から s（0〜1）まで。k が大きいほど根元から早く細る
+      const L=[], R=[], N=Math.max(4,Math.ceil(40*s));
       for(let i=0;i<=N;i++){
-        const t=i/N, p=P(t), a=P(Math.max(0,t-.01)), b=P(Math.min(1,t+.01)), dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1, w=(w0+(w1-w0)*t)*u/2;
+        const t=s*i/N, p=P(t), a=P(Math.max(0,t-.01)), b=P(Math.min(1,t+.01)), dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1,
+          tip=Math.min(1,.08+(s-t)/.12), w=(w1+(w0-w1)*Math.pow(1-t,k))*tip*u/2;
         L.push([p[0]-dy/l*w,p[1]+dx/l*w]); R.unshift([p[0]+dy/l*w,p[1]-dx/l*w]);
       }
       return "M"+L.concat(R).map(q=>q[0].toFixed(1)+" "+q[1].toFixed(1)).join(" L")+"Z";
     };
     const sv=document.createElementNS(NS,"svg"), id="flm"+(++bn);
+    // にじみをぼかす範囲は曲線全体を囲む固定の枠（線の外形に対する割合だと、伸び始めの小さな線でぼかしが四角く切れる）
+    const xs=[ax,c1[0],c2[0],bx], ys=[ay,c1[1],c2[1],bt], m=30*u, fx=Math.min(...xs)-m, fy=Math.min(...ys)-m;
     sv.setAttribute("aria-hidden","true"); sv.classList.add("fl-thread");
-    sv.innerHTML=`<defs><mask id="${id}" maskUnits="userSpaceOnUse"><path d="M${ax} ${ay} C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${bx} ${bt}" fill="none" stroke="#fff" stroke-width="${24*u}" stroke-linecap="round"/></mask></defs>`
-      +`<g mask="url(#${id})"><path d="${band(16,4)}" fill="rgba(29,26,21,.12)"/><path d="${band(6,1.4)}" fill="rgba(29,26,21,.55)"/></g>`;
+    sv.innerHTML=`<defs><linearGradient id="${id}g" gradientUnits="userSpaceOnUse" x1="${ax}" y1="${ay}" x2="${bx}" y2="${bt}"><stop offset="0" stop-color="#1d1a15" stop-opacity=".82"/><stop offset=".5" stop-color="#1d1a15" stop-opacity=".52"/><stop offset="1" stop-color="#1d1a15" stop-opacity=".26"/></linearGradient>`
+      +`<filter id="${id}h" filterUnits="userSpaceOnUse" x="${fx.toFixed(1)}" y="${fy.toFixed(1)}" width="${(Math.max(...xs)+m-fx).toFixed(1)}" height="${(Math.max(...ys)+m-fy).toFixed(1)}"><feGaussianBlur stdDeviation="${(4*u).toFixed(2)}"/></filter></defs>`
+      +`<path fill="rgba(29,26,21,.17)" filter="url(#${id}h)"/><path fill="url(#${id}g)"/>`;
+    const [halo,core]=sv.querySelectorAll("path");
     ov.appendChild(sv); extras.push(sv);
-    // 線の長さは曲線を細かく区切って測る（mask の中の path の getTotalLength はブラウザによって当てにできない）
-    let L=0, prev=P(0);
-    for(let i=1;i<=40;i++){ const q=P(i/40); L+=Math.hypot(q[0]-prev[0],q[1]-prev[1]); prev=q; }
-    L=Math.ceil(L*1.02);
-    const mp=sv.querySelector("mask path"); mp.style.strokeDasharray=L+"px";
-    anims.push(mp.animate([{strokeDashoffset:L+"px"},{strokeDashoffset:"0px"}],{duration:T(dur),easing:"cubic-bezier(.45,0,.6,1)",fill:"both"}));
+    const t0=performance.now(), D=Math.max(1,T(dur)), ease=x=>x<.5?4*x*x*x:1-Math.pow(2-2*x,3)/2;
+    const grow=now=>{
+      if(!sv.isConnected) return; // 飛ばす・閉じるで片づいたら止める
+      const s=Math.max(.03,ease(Math.min(1,(now-t0)/D)));
+      halo.setAttribute("d",band(28,6,1.3,s)); core.setAttribute("d",band(10,1.1,1.8,s));
+      if(s<1) requestAnimationFrame(grow);
+    };
+    grow(t0);
     anims.push(sv.animate([{opacity:1},{opacity:1,offset:.42},{opacity:0}],{duration:T(dur*2.6),fill:"both"}));
   });
   let stamped=false, revealed=false;
@@ -2251,6 +2259,7 @@ function fudaWrite(F){
     at(land,()=>Oto.drip(.06));
   });
   // 4. 着地した言の葉から墨の筋が題へ上り、題が一字ずつ書かれる
+  blot(FW/2,F.by+56,46,1440,700,.3); // 筋の根元の墨だまり（出始めが細い縦棒だとカーソルに見えた）
   thread(FW/2,F.by+52,FW/2+110,282,1480,300);
   let t=1780;
   at(t,()=>Oto.plop());
