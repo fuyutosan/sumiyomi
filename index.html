@@ -42,14 +42,57 @@
 <script>
 /* 書体（Google Fonts）は描画を止めずに取り寄せる。タイトル画面の文字（題字「墨詠み」・リード文・ボタンなど）は、
    その書体が届くまで姿を見せない（別の書体で現れてからパッと入れ替わるのを防ぐ）。待つのは最大4.5秒。
-   届くのが書き出しより早ければ、いつもの流れのまま。遅ければ、届いた時点から頭（題字）の書き出しをやり直す */
+   届くのが書き出しより早ければ、いつもの流れのまま。遅ければ、届いた時点から頭（題字）の書き出しをやり直す。
+   ＋ 第8回：待てない人のために、演出の途中でタイトル画面を押す・キーを押すと、演出を終わりの姿にする（早送り。その一押しでは「庭へ入る」は発動しない）。
+   一度でも庭に入った人（localStorage の sumiyomi-entered）には、演出を2.5倍速で見せる。どちらも動きを減らす設定のときは今のまま。
+   早送りしたあとに書体が届いても、演出は巻き戻さない（ff）。早送り・倍速の対象は、GATED の文字に、題字の背景の滲み（.stain）と円相（.enso）を足したもの（しずく #drop は除く） */
 (function(){
-  var de=document.documentElement, done=false, need=2;
+  var de=document.documentElement, done=false, need=2, ff=false;
   var GATED="h1 .tc,#title .subtitle,#title .roma,#title .yomi,#title .rakkan,#title .btn,#title .jikoku,#title .okuru";
+  var calm=matchMedia("(prefers-reduced-motion: reduce)").matches, rate=1;
+  try{ if(!calm&&localStorage.getItem("sumiyomi-entered")==="1") rate=2.5; }catch(e){}
+  window.__titleRate=rate;
+  /* タイトル画面の演出（CSSアニメ）。withDrop が偽のときは、しずく（#drop）を除く */
+  function fx(withDrop){
+    return document.getAnimations().filter(function(x){
+      var t=x.effect&&x.effect.target;
+      return x.animationName&&t&&t.closest&&t.closest("#title")&&(withDrop||!t.closest("#drop"));
+    });
+  }
+  /* 「庭へ入る」がまだ出きっていないあいだだけ、早送りの対象 */
+  function pending(){
+    var t=document.getElementById("title");
+    if(calm||!t||!t.classList.contains("active")||t.classList.contains("exiting")) return false;
+    var b=t.querySelector(".btn"), a=b&&b.getAnimations().filter(function(x){ return x.animationName; })[0];
+    if(!a) return false;
+    var m=a.effect.getTiming();
+    return a.currentTime<m.delay+m.duration;
+  }
+  function finish(){
+    ff=true;
+    fx(false).forEach(function(x){ var m=x.effect.getTiming(); x.currentTime=m.delay+m.duration; });
+  }
+  /* 2回目以降の倍速。タイトルの部品を読み終えた直後に body から呼ぶ */
+  window.__titleSpeed=function(){ if(rate>1) try{ fx(true).forEach(function(x){ x.playbackRate=rate; }); }catch(e){} };
+  /* 早送りを起こした押しが「庭へ入る」などを動かさないよう、そのあとの click は止める（キーボードの Enter・Space も） */
+  var swallow=0;
+  addEventListener("pointerdown",function(e){
+    swallow=0;
+    if(e.target.closest&&e.target.closest("#otokit,#otohint")) return;
+    try{ if(pending()){ finish(); swallow=Date.now()+1500; } }catch(x){}
+  },true);
+  addEventListener("keydown",function(){
+    try{ if(pending()){ finish(); swallow=Date.now()+3000; } }catch(x){}
+  },true);
+  addEventListener("keyup",function(){ if(swallow) setTimeout(function(){ swallow=0; },0); },true);
+  addEventListener("click",function(e){
+    if(swallow>Date.now()){ swallow=0; e.stopPropagation(); e.preventDefault(); }
+  },true);
   de.classList.add("fw");
   function release(){
     if(done) return; done=true;
     de.classList.remove("fw");
+    if(ff) return; // 早送りしたあとは巻き戻さない
     try{
       var an=[].map.call(document.querySelectorAll(GATED),function(el){ return el.getAnimations().filter(function(x){ return x.animationName; })[0]; }).filter(Boolean);
       var d=function(x){ return x.effect.getTiming().delay; };
@@ -294,7 +337,14 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 
 /* ===== 庭 ===== */
 #garden{justify-content:flex-start;padding-top:calc(16px + env(safe-area-inset-top))}
-.garden-header{text-align:center;color:var(--ink-70);letter-spacing:.24em;font-size:.92rem;line-height:1.9;z-index:6;position:relative}
+.garden-header{text-align:center;color:var(--ink-70);letter-spacing:.24em;font-size:.92rem;line-height:1.9;z-index:6;position:relative;isolation:isolate}
+/* 見出しと円相の後ろに、縁のない和紙色の霞を敷く（タイトル画面の .subtitle::before と同じ考え方）：松など濃い絵の上でも読める。
+   紙色の面を放射状に抜いて（中心 .8 → 縁で透明）四角く見えないようにする */
+.garden-header::before{
+  content:"";position:absolute;inset:-30px -56px -22px;z-index:-1;pointer-events:none;
+  background:var(--paper);opacity:.8;
+  -webkit-mask-image:radial-gradient(closest-side,#000 45%,transparent 100%);mask-image:radial-gradient(closest-side,#000 45%,transparent 100%);
+}
 .picked-row{display:flex;gap:12px;margin-top:8px;justify-content:center;min-height:78px}
 /* 拾い枠は円相（墨の輪）。空きは淡く（.18）、拾うと濃く（.70）。三つの輪は向きを変える（::before だけを回す＝文字は回さない）。
    拾った言葉は縦書き（庭の言葉と同じ）で、輪の内側に収まる大きさ（文字数で切り替え。全40語×3つの輪で文字と輪の最短距離を実測：3文字.92rem・4文字.74rem で2px以上あく。4文字を .82rem にすると輪の線に触れる）。
@@ -441,9 +491,27 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-mitate p{line-height:1.9;letter-spacing:.02em;font-size:.88rem;color:var(--ink-70);margin-bottom:10px}
 .r-mitate p:last-child{margin-bottom:0}
 .nw{white-space:nowrap}
-.r-pick{display:block;margin:8px 0 0 auto;font:inherit;font-size:.74rem;letter-spacing:.12em;color:var(--ink-70);background:transparent;border:1px solid var(--ink-25);border-radius:2px;padding:4px 12px;cursor:pointer}
-.r-pick[aria-pressed="true"]{color:var(--shu);border-color:var(--shu)}
-.r-pick[aria-pressed="true"]::before{content:"◆ "}
+/* 札に載せる見立ての選び（第8回）：四角い枠はやめ、文字だけのボタンにする（右寄せ・押せる高さ44px以上）。
+   選ばれていない＝「この見立てを札に」＋短い筆の下線（.r-pick-t::after・墨 .3。マウスを乗せると .55）。
+   選ばれている＝「札に載る見立て」を朱の文字で、頭に小さな落款（.r-pick-t::before）。下線はなし。文言の入れ替えは pickOracle（aria-pressed と一緒に） */
+.r-pick{display:block;margin:2px 0 0 auto;padding:12px 2px 16px;min-height:44px;font:inherit;font-size:.78rem;line-height:1.5;letter-spacing:.12em;color:var(--ink-70);background:none;border:0;border-radius:0;cursor:pointer}
+.r-pick-t{position:relative;display:inline-block}
+.r-pick-t::after{
+  content:"";position:absolute;left:-2px;right:-2px;top:100%;height:11px;margin-top:2px;
+  background:var(--ink);opacity:.3;transition:opacity .2s;pointer-events:none;
+  -webkit-mask:var(--sumi-brush1) no-repeat center/100% 100%;mask:var(--sumi-brush1) no-repeat center/100% 100%;
+}
+@media (hover:hover) and (pointer:fine){
+  .r-pick:hover .r-pick-t::after{opacity:.55}
+}
+.r-pick[aria-pressed="true"]{color:var(--shu)}
+.r-pick[aria-pressed="true"] .r-pick-t::after{content:none}
+.r-pick[aria-pressed="true"] .r-pick-t::before{
+  content:"";display:inline-block;width:10px;height:10px;margin-right:.55em;vertical-align:-1px;
+  background:var(--shu);transform:rotate(-6deg);
+  -webkit-mask:var(--sumi-seal) no-repeat center/100% 100%;mask:var(--sumi-seal) no-repeat center/100% 100%;
+}
+.r-pick:focus-visible{outline:1.5px solid var(--ink-45);outline-offset:2px}
 .r-koe{display:block;color:var(--ink-45);font-size:.8rem;letter-spacing:.05em;margin-bottom:2px}
 .r-wd{font-size:.72rem;letter-spacing:.2em;margin-right:.1em}
 /* 冒頭の平たい一言（1段目）と、核心の見立て（2段目）。詩（右の題と本文）はこの後に読む */
@@ -457,7 +525,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-body{line-height:1.9;letter-spacing:.02em;font-size:.95rem;margin-bottom:10px}
 .r-pair{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70)}
 /* 行末の1〜2文字だけ残るのを避ける（対応ブラウザだけ効く。効かない所は BudouX の文節折りのまま） */
-.r-body,.r-pair,.r-thread,.r-advice,.r-mitate p,.r-core p{text-wrap:pretty}
+.r-body,.r-pair,.r-thread,.r-advice,.r-mitate p,.r-core p,.ans-t{text-wrap:pretty}
 /* 三つに通う糸の一文：本文（.r-body）の直前に1つ。本文と同じ大きさ・やや薄い墨・斜体にはしない */
 .r-thread{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70);margin-bottom:10px}
 /* 拾った言葉の読み：各見立ての直後に小さく1行（#66625a は紙色に対して約5:1）。核心の見立てはやや大きく */
@@ -542,6 +610,7 @@ body.rv-run #result{transition:opacity .3s ease .2s}
 @media (max-width:800px){
   body[data-screen="result"] #otokit{top:calc(6px + env(safe-area-inset-top));right:8px}
   body[data-screen="result"] #otobtn{width:38px;height:38px;font-size:.95rem;opacity:.7}
+  body[data-screen="result"].r-scrolled #otobtn{opacity:.18}
   body[data-screen="result"] #otobtn:hover,body[data-screen="result"] #otobtn:focus-visible{opacity:1}
   #result{padding-top:calc(52px + env(safe-area-inset-top))}
 }
@@ -645,6 +714,7 @@ body.rv-run #result{transition:opacity .3s ease .2s}
   <div class="jikoku" id="jikoku"></div>
   <button class="okuru" onclick="shareApp()">この庭を、誰かに贈る</button>
 </div>
+<script>window.__titleSpeed&&window.__titleSpeed();/* 2回目以降は演出を2.5倍速に（head の書体待ちスクリプト）。読み込みの遅れで1倍速の時間が長引かないよう、タイトルの直後で */</script>
 
 <!-- 庭 -->
 <div class="screen" id="garden">
@@ -747,18 +817,18 @@ const QUESTIONS = {
           ["休んでも、休まらない",{疲:2,憂:1},"休んでも休まらないのは、こころが宿題を持ち帰っているからです。",1]]},
     {q:"その疲れを、誰かに言いましたか。",
      ans:[["言っていない。言うほどでもない気がして",{疲:1,寂:2},"「言うほどでもない」と思う人ほど、黙って長く運んでいます。",1],
-          ["疲れ、というほどではない",{},"疲れと呼ばずにいられるなら、今日の荷物はまだ軽い方です。"],
+          ["話すことはない。疲れはそれほどでもない",{},"疲れと呼ばずにいられるなら、今日の荷物はまだ軽い方です。"],
           ["言える人がいる",{疲:1,温:2},"言える人がいる。それはあなたが積み上げてきた財産です。"]]},
   ],
   憂:[
     {q:"その落ち着かなさは、いつ頃から そばにいますか。",
      ans:[["ここ数日。きっかけに心当たりがある",{憂:2},"きっかけが見えている不安は、もう半分解けています。"],
           ["ずっと前から、うっすらと",{憂:1,疲:1},"長く連れ添った不安は、あなたの一部のように感じられるかもしれません。それでも、あなたそのものではありません。"],
-          ["落ち着かない、というほどではない",{},"違う、と言える目を、あなたは持っています。"]]},
+          ["そばにいる、というほどではない",{},"違う、と言える目を、あなたは持っています。"]]},
     {q:"その心配ごとは、あなたの力で変えられることですか。",
      ans:[["たぶん変えられる。でも動けていない",{憂:1,惑:1,疲:1},"変えられると分かっているのに動けない。それは怠けではなく、疲れの合図です。"],
           ["変えられない。相手や状況のこと",{憂:2},"変えられないものを心配し続けているのは、手放し方をまだ誰にも教わっていないからです。"],
-          ["心配、というほどのことはない",{},"心配のない日は、それだけで貴重な一日です。"]]},
+          ["変えたいほどの心配は、とくにない",{},"心配のない日は、それだけで貴重な一日です。"]]},
     {q:"夜、眠る前のあなたの頭の中は。",
      ans:[["明日のことでいっぱい",{憂:2,熾:1},"あなたは明日を、今のうちに生きようとしています。二日分は、誰にも生きられません。"],
           ["過ぎたことを繰り返している",{憂:1,寂:1,疲:1},"過去の再放送は、夜になると、実際より長く感じられるものです。",1],
@@ -768,7 +838,7 @@ const QUESTIONS = {
     {q:"胸の中の熱は、誰かに向いていますか。それとも自分に。",
      ans:[["誰か・何かに向いている",{熾:2},"外に向いた火は、大切なものを踏まれた合図です。あなたは怒っているのではなく、守っています。"],
           ["自分に向いている。ふがいなさに近い",{熾:1,憂:1,疲:1},"自分に向けた火は、いちばん消耗します。それだけ、自分に期待をかけてきたということでもあります。",1],
-          ["熱があるわけではない",{},"熱のない日は、火が休んでいる日です。薪は、ちゃんと残っています。"]]},
+          ["どちらでもない。熱はあまりない",{},"熱のない日は、火が休んでいる日です。薪は、ちゃんと残っています。"]]},
     {q:"その熱は、今日が初めてですか。",
      ans:[["前からずっと燻っている",{熾:2,疲:1},"長く燻る火は、消してほしいのではなく、認めてほしいだけです。"],
           ["最近、火がついた",{熾:2},"新しい火は、新しい願いです。火事になる前なら、暖炉になります。"],
@@ -782,14 +852,14 @@ const QUESTIONS = {
     {q:"その静けさは、心地よいですか。それとも少し冷たいですか。",
      ans:[["心地よい。ひとりの時間が欲しかった",{澄:2,寂:1},"望んで選んだひとりは、孤独ではなく回復です。"],
           ["少し冷たい。誰かの声が恋しい",{寂:2,温:1},"恋しさを感じられるのは、あたたかい記憶を持っている証拠です。"],
-          ["静けさは、あまり感じていない",{},"静かでない日も、あなたの庭のひとつの天気です。"]]},
+          ["どちらでもない。静かな感じはあまりしない",{},"静かでない日も、あなたの庭のひとつの天気です。"]]},
     {q:"最後に「わかってもらえた」と感じたのは、いつですか。",
      ans:[["最近あった",{温:2,寂:1},"わかってくれる人が現にいる。あなたの寂しさは、距離の問題にすぎません。"],
           ["思い出せない",{寂:2,疲:1},"わかってもらえた記憶が遠いだけで、あなたがわかってもらえない人なのではありません。",1],
           ["わかってもらうこと自体、諦めている節がある",{寂:2,惑:1},"その諦めは、傷つかないための知恵でした。今日まで、あなたを守ってきました。",1]]},
     {q:"その寂しさに、特定の誰かの顔はありますか。",
      ans:[["ある。顔が浮かんでいる",{寂:2,温:1},"顔が浮かんでいるなら、それは寂しさではなく、便りの下書きです。"],
-          ["寂しい、とまでは言えない",{},"寂しいとまでは言わない。その線引きができるのは、自分をちゃんと見ている人です。"],
+          ["顔が浮かぶほど、寂しくはない",{},"寂しいとまでは言わない。その線引きができるのは、自分をちゃんと見ている人です。"],
           ["人というより、場所や時間が恋しい",{寂:1,澄:1,温:1},"帰りたいのは場所ではなく、そこにいた頃の自分です。"]]},
   ],
   澄:[
@@ -814,7 +884,7 @@ const QUESTIONS = {
     {q:"その予感やはじまりを、誰かに話しましたか。",
      ans:[["まだ誰にも言っていない",{灯:1,寂:1},"まだ話していない夢は、まだ誰にも傷つけられていない夢です。"],
           ["言った。少し笑われた気もする",{灯:2,熾:1},"笑われた夢は、だいたい早すぎただけです。早いのは、間違いではありません。"],
-          ["予感というほどのものは、まだない",{},"予感のない日は、足もとを見る日です。それも、立派な歩き方です。"]]},
+          ["話すほどの予感は、まだない",{},"予感のない日は、足もとを見る日です。それも、立派な歩き方です。"]]},
     {q:"その灯りは、いつからありますか。",
      ans:[["最近ともった",{灯:2},"新しい灯りは揺れやすいものです。揺れているのは消えかけではなく、まだ若いだけです。"],
           ["ずっと前から消えずにある",{灯:2,澄:1},"長く消えない灯りは、趣味ではなく使命に近いものです。"],
@@ -832,10 +902,10 @@ const QUESTIONS = {
     {q:"その迷いに、期限はありますか。",
      ans:[["ある。近づいている",{惑:1,熾:1,憂:1},"期限が近い迷いは、迷いではなく、準備の最終段階です。"],
           ["ない。だからずっと迷っていられる",{惑:2},"期限のない迷いは、住み着きます。あなたはもう、それに気づいています。"],
-          ["迷い、というほどではない",{},"迷いと呼ぶほどでなければ、足もとは案外しっかりしています。"]]},
+          ["期限を気にするほどの迷いではない",{},"迷いと呼ぶほどでなければ、足もとは案外しっかりしています。"]]},
   ],
   温:[
-    {q:"そのあたたかさは、受け取ったもの？ 渡したいもの？",
+    {q:"そのあたたかさは、どこから来ていますか。",
      ans:[["誰かから受け取った",{温:2,灯:1},"受け取ったぬくもりは、あなたの中で、次の誰かの分まで育ちます。"],
           ["あたたかさとは、少し違う",{},"違うものを違うと言えるのは、あたたかさの輪郭を知っているからです。"],
           ["昔の記憶の中にある",{温:1,寂:2},"記憶のぬくもりは、冷めません。あなたはそれで、何度でもあたたまれます。"]]},
@@ -1373,7 +1443,7 @@ function show(id){
 }
 
 /* 落ちた墨のしずくを消す */
-setTimeout(()=>{const d=document.getElementById("drop"); if(d) d.classList.add("done");},1250);
+setTimeout(()=>{const d=document.getElementById("drop"); if(d) d.classList.add("done");},1250/(window.__titleRate||1)); // 倍速のときはしずくの消えるのも早める
 
 /* 時刻で紙の色味を変える */
 (function(){
@@ -1399,6 +1469,7 @@ function startGarden(){
   rvCancel(); // 結果の「間」の途中で戻ってきたとき、鈴や墨が庭に残らないように
   playEvents=new Set();
   trackOnce("play-start");
+  try{ localStorage.setItem("sumiyomi-entered","1"); }catch(e){} // 一度でも庭に入った印：次からタイトルの演出を倍速にする（head の書体待ちスクリプト）
   score={}; AXES.forEach(a=>score[a]=0);
   picked=[]; answers=[]; qQueue=[]; qIndex=0;
   pool=[...WORDS].sort(()=>Math.random()-.5);
@@ -1420,17 +1491,26 @@ function spawnWord(){
   if(picked.some(p=>p.t===w.t)) return;
   // 補充した山から、いま庭に浮かんでいる言葉と同じ語が出たら見送る（同じ語が二つ並ばないように）
   if([...field.querySelectorAll(".word:not(.leaving)")].some(e=>e.textContent===w.t)) return;
-  // 4×4のマス目から空きマスを選んで重なりを防ぐ
+  // 4×4のマス目から空きマスを選んで重なりを防ぐ（消えていく途中の言葉の跡も、消えきるまではふさがったマスとして数える）
   const zones=[];
-  for(let zi=0;zi<16;zi++) if(!field.querySelector('[data-zone="'+zi+'"]:not(.leaving)')) zones.push(zi);
+  for(let zi=0;zi<16;zi++) if(!field.querySelector('[data-zone="'+zi+'"]')) zones.push(zi);
   if(zones.length===0) return;
   const z=zones[Math.floor(Math.random()*zones.length)];
   const el=document.createElement("div");
   el.className="word"; el.textContent=w.t;
   el.dataset.zone=z;
-  el.style.fontSize=(1.15+Math.random()*1.35)+"rem";
-  el.style.left=(4+(z%4)*24+Math.random()*10)+"%";
-  el.style.top=(2+Math.floor(z/4)*23+Math.random()*8)+"%";
+  /* 文字の大きさ：縦書きの高さ（文字数×大きさ×1.1＋ゆれの余白 SWAY）が、マス目1段の高さ（庭の高さ×0.23）から8px引いた値を超えないよう上限をつける
+     （幅320×高さ640で「木漏れ日」「手のひら」が下の段の言葉に重ならないように）。横も同じ考えで、言葉の幅（大きさ×1.5）が1列の幅（庭の幅×0.24）に収まるようにする。
+     上限が小さすぎる画面でも 0.9rem より小さくはしない */
+  const rem=parseFloat(getComputedStyle(document.documentElement).fontSize)||16;
+  const rowH=field.clientHeight*.23, colW=field.clientWidth*.24;
+  const SWAY=12, SWAYX=7; // .word が sway で動く幅（上下11px・左右6px）＋1px
+  const fs=Math.min(1.15+Math.random()*1.35, Math.max(.9,Math.min((rowH-8-SWAY)/(w.t.length*1.1),(colW-8-SWAYX)/1.5)/rem));
+  /* 段・列の中でずらすのは、その言葉の大きさを引いた余りの範囲だけ（今までの最大は庭の高さの8%・幅の10%） */
+  const roomY=Math.max(0,rowH-8-SWAY-w.t.length*fs*rem*1.1), roomX=Math.max(0,colW-8-SWAYX-fs*rem*1.5);
+  el.style.fontSize=fs+"rem";
+  el.style.left=`calc(${4+(z%4)*24}% + ${(Math.random()*Math.min(field.clientWidth*.1,roomX)).toFixed(1)}px)`;
+  el.style.top=`calc(${2+Math.floor(z/4)*23}% + ${(Math.random()*Math.min(field.clientHeight*.08,roomY)).toFixed(1)}px)`;
   el.style.animationDelay=(-Math.random()*8)+"s";
   el.onclick=()=>pickWord(w,el);
   field.appendChild(el);
@@ -1493,7 +1573,7 @@ function pickWord(w,el){
 let curQ=null;
 /* 文章を文節で折れるように包む（BudouX） */
 /* BudouXが単語の途中で区切ってしまう語は、塊のまま折らない（96本を洗い出して見つけた5語） */
-const NOWRAP=/いくつ|ふがいなさ|気持ち|そもそも|ひと山/g;
+const NOWRAP=/いくつ|ふがいなさ|気持ち|そもそも|ひと山|という/g;
 /* 逆に、BudouXが切らない文節の境目で、長い文節が行に収まらず前の短い文節が1〜2文字だけ孤立する所（幅320の「火を」「声を」「上に」「じゅうぶ|んです」）には、折り返しの余地（wbr）を足す */
 const BREAKOK=/消そうと(?=しない)|だけでも?(?=じゅうぶん|かまい)|(?:せい|の)(?=かもしれません)/g;
 const bx=t=>`<budoux-ja>${t.replace(NOWRAP,m=>`<span class="nw">${m}</span>`).replace(BREAKOK,m=>`${m}<wbr>`)}</budoux-ja>`;
@@ -1581,6 +1661,8 @@ function pickCore(p){
 /* ===== 結果が出る瞬間の「間」=====
    最後の答えを押してから 0.18 秒で renderResult が呼ばれ、そこを 0 として下の秒数で進む（CSS の --rv-* に渡す）。
    墨がにじむ(0〜.8) → 結果カード(card) → 題が一字ずつ(title〜title+titleSpan+.3) → 落款と鈴(seal) → 冒頭の一言(plain) → 核心の見立て(core) → 残り(rest)。end で後片付け */
+/* 結果画面を下へ送ると、右上の「音」が縦書きの題に重なる。送っている間は薄くする（上へ戻すと元どおり。押せるのは同じ） */
+document.getElementById("result").addEventListener("scroll",e=>document.body.classList.toggle("r-scrolled",e.target.scrollTop>24),{passive:true});
 const RV={card:.25, title:.3, titleSpan:.4, seal:1, plain:1.2, core:1.4, rest:1.6, end:2.4};
 let rvTimers=[];
 /* 演出の途中で庭へ戻る・結果を作り直すときに、残っている時計と墨を片づける */
@@ -1653,7 +1735,7 @@ function renderResult(){
   /* 見立て1つ分：拾った言葉 ─ 「答え」── 見立て ＋ 札に載せるボタン（i＝answers の番号。表示の順番とは別） */
   /* 拾った言葉の読み（w.c）：各見立ての直後に小さく1行。問いのなかった言葉だけ、下で「語｜読み」として残す */
   const readOf=a=>{ const w=picked.find(x=>x.t===a.word); return w?`<span class="r-wread">${bx(w.c)}</span>`:""; };
-  const mitateP=(a,i)=>`<p><span class="r-koe"><span class="r-wd nw">${a.word} ─</span> ${bx("「"+a.text+"」")}</span>── ${bx(a.refl)}${readOf(a)}<button class="r-pick" data-i="${i}" aria-pressed="${i===core}" onclick="pickOracle(${i})">札に載せる</button></p>`;
+  const mitateP=(a,i)=>`<p><span class="r-koe"><span class="r-wd nw">${a.word} ─</span> ${bx("「"+a.text+"」")}</span>── ${bx(a.refl)}${readOf(a)}<button class="r-pick" data-i="${i}" aria-pressed="${i===core}" onclick="pickOracle(${i})"><span class="r-pick-t">${i===core?PICK_ON:PICK_OFF}</span></button></p>`;
   const unasked=picked.filter(w=>!answers.some(a=>a.word===w.t));
   const rest=answers.map((a,i)=>i===core?"":mitateP(a,i)).join("");
   const heavy=isHeavy();
@@ -1747,13 +1829,15 @@ function drawSpaced(ctx,text,x,y,size,font,color,ls){
   let cx=x-total/2;
   [...text].forEach((ch,i)=>{ ctx.textAlign="left"; ctx.fillText(ch,cx,y); cx+=widths[i]+ls; });
 }
-/* 札に載せる一言を選ぶ（結果画面のボタン） */
+/* 札に載せる一言を選ぶ（結果画面のボタン）。選ばれた見立ては「札に載る見立て」＋落款、ほかは「この見立てを札に」（見た目は CSS の .r-pick） */
+const PICK_ON="札に載る見立て", PICK_OFF="この見立てを札に";
 function pickOracle(i){
   if(!LAST) return;
   LAST.oi=i;
   document.querySelectorAll("#rcard .r-pick").forEach(b=>{
     const on=+b.dataset.i===i;
     b.setAttribute("aria-pressed",on);
+    b.querySelector(".r-pick-t").textContent=on?PICK_ON:PICK_OFF;
   });
 }
 /* 札の番号：主軸×副軸の56通りに第一番〜第五十六番 */
