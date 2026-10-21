@@ -399,6 +399,8 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-hana{text-align:center;color:var(--ink-45);font-size:.72rem;letter-spacing:.5em;margin:14px 0}
 .r-body{line-height:1.9;letter-spacing:.02em;font-size:.95rem;margin-bottom:10px}
 .r-pair{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70)}
+/* 三つに通う糸の一文：本文（.r-body）の直前に1つ。本文と同じ大きさ・やや薄い墨・斜体にはしない */
+.r-thread{line-height:1.9;letter-spacing:.02em;font-size:.95rem;color:var(--ink-70);margin-bottom:10px}
 .r-words{margin:16px 0}
 .r-wline{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px dotted var(--ink-25);font-size:.88rem;line-height:1.85}
 .r-wname{font-family:"Yuji Syuku",serif;flex:none;min-width:5em;letter-spacing:.1em;font-size:.94rem}
@@ -440,6 +442,26 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 
 .fade-slow{animation:fadein 1.6s ease}
 @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+/* ===== 結果が出る瞬間の「間」（動きを減らす設定のときは使わない＝JS が rv を付けない）=====
+   墨がにじむ → 結果カード → 右の題が一字ずつ → 落款（音もここ）→ 冒頭の一言 → 核心の見立て → 残り。
+   時刻（--rv-*）は JS の RV から渡す（renderResult の直前にある定数が正本） */
+.inkbloom{position:fixed;left:50%;top:50%;width:min(120vmin,680px);height:min(120vmin,680px);z-index:5;pointer-events:none;animation:inkbloom .8s ease-out both}
+@keyframes inkbloom{
+  0%{transform:translate(-50%,-50%) scale(.12) rotate(0);opacity:0;filter:blur(10px)}
+  35%{opacity:.9;filter:blur(5px)}
+  100%{transform:translate(-50%,-50%) scale(1.1) rotate(12deg);opacity:0;filter:blur(9px)}
+}
+@keyframes rv-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes rv-card{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rv-ch{from{opacity:0;transform:translateY(-.6em);filter:blur(3px)}to{opacity:1;transform:none;filter:blur(0)}}
+body.rv-run .screen{transition-duration:.45s}
+body.rv-run #result{transition:opacity .3s ease .2s}
+#rcard.rv{animation:rv-card .35s ease var(--rv-card) both}
+#rcard.rv .r-plain{animation:rv-in .45s ease var(--rv-plain) both}
+#rcard.rv .r-core{animation:rv-in .45s ease var(--rv-core) both}
+#rcard.rv .r-content>:not(.r-date,.r-label,.r-plain,.r-core),#rcard.rv .k-inner>:not(.r-main){animation:rv-in .45s ease var(--rv-rest) both}
+#rcard.rv .vc{display:inline-block;animation:rv-ch .3s ease both}
+#rcard.rv .seal{animation:stamp .5s cubic-bezier(.2,1.6,.4,1) var(--rv-seal) both}
 @media (max-width:600px){
   .sekitei{width:56vw;opacity:.85}
   .q-card{padding:28px 18px}
@@ -483,7 +505,7 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
   #title.exiting .okuru,#title.exiting .btn,#title.exiting .rakkan,#title.exiting .yomi{animation:rm-out .3s ease forwards}
   .screen,.bgimg{transition-duration:.4s}
   .word,.word.chosen{animation:none}
-  .splat,.ripple{display:none}
+  .splat,.ripple,.inkbloom{display:none}
   .fade-slow{animation:rm-in .4s ease}
 }
 </style>
@@ -773,28 +795,44 @@ const PLAIN = {疲:"疲れ",憂:"不安",熾:"苛立ち",寂:"寂しさ",澄:"�
 const BASE = {
   疲:{body:"あなたは今、静かに疲れています。頑張りが足りないのではなく、長く頑張りすぎた人の疲れ方です。それは怠けではなく、こころが出した正直な便り。あなたはそれを、もう受け取っています。",
       advice:"今夜は、寝る10分前にスマホを別の部屋へ置いてください。予定を減らせる日なら、ひとつだけ減らす。砂紋は、それだけで整いはじめます。",
-      step:"寝る10分前、スマホを別の部屋へ。"},
+      step:"寝る10分前、スマホを別の部屋へ。",
+      gentle:"今日は、何かを足すより、ひとつ減らす日です。温かい飲みものを一杯、ゆっくり飲むだけでじゅうぶんです。",
+      gentleStep:"温かい飲みものを、一杯だけ。"},
   憂:{body:"あなたのそばには今、遠い雷が居座っています。正体の見えない不安は、実物より大きく鳴るものです。あなたが弱いのではありません。耳が、良すぎるのです。",
       advice:"不安を紙に3行だけ書き出してください。「何が・いつ・どれくらい」怖いのか。言葉になった不安は、雷から天気予報に変わります。",
-      step:"不安を、紙に3行だけ書き出す。"},
+      step:"不安を、紙に3行だけ書き出す。",
+      gentle:"今日は、不安に答えを出さなくてかまいません。窓の外をしばらく眺めるだけでも、じゅうぶんです。",
+      gentleStep:"窓の外を、少しだけ眺める。"},
   熾:{body:"あなたの胸の奥には今、熾火があります。怒りにも焦りにも見えますが、その火の根にあるのは「大切にしたいものがある」という願いです。願いのない場所に、火は起きません。",
       advice:"火を消そうとしないでください。「わたしは何を守りたかったのか」を、スマホのメモに一行だけ書く。願いが見えた瞬間、火は暖に変わります。",
-      step:"守りたかったものを、メモに一行。"},
+      step:"守りたかったものを、メモに一行。",
+      gentle:"今日は、火を消そうとしなくて大丈夫です。冷たい水を一杯飲んで、息をひとつ吐くだけでじゅうぶんです。",
+      gentleStep:"冷たい水を、一杯だけ。"},
   寂:{body:"あなたは今、月明かりの庭にひとりで立っています。その寂しさは、人とのつながりを本気で扱う人にしか訪れません。欠けているのではなく、やさしさが裏返っているだけです。",
       advice:"返事を期待しない短い便りを、ひとつだけ送ってください。「元気？」の四文字でかまいません。送る相手が浮かばない日は、今日の空を一枚撮るだけでも。灯りは、小さな一言から灯ります。",
-      step:"返事のいらない「元気？」をひとつ。"},
+      step:"返事のいらない「元気？」をひとつ。",
+      gentle:"今日は、寂しさをなくそうとしなくて大丈夫です。ラジオや動画でも、誰かの声を聞くだけでじゅうぶんです。",
+      gentleStep:"ラジオか動画で、誰かの声を聞く。"},
   澄:{body:"あなたのこころは今、風のない朝の水面です。感情に揺らされず、ものごとをそのまま映せる。めったに来ない時間の中に、あなたはいます。",
       advice:"この澄んだ時間に、大きな決断は急がなくていい。「本当に大切にしたいもの」をひとつ、付箋に書いて見える所に貼ってください。静かな水面にこそ、本心は正しく映ります。",
-      step:"大切にしたいものを、付箋に一つ。"},
+      step:"大切にしたいものを、付箋に一つ。",
+      gentle:"今日は、何も決めなくて大丈夫です。静かな時間を、ただそのまま過ごすだけでじゅうぶんです。",
+      gentleStep:"何も決めない時間を、少しだけ。"},
   灯:{body:"あなたのこころには今、小さくても確かな灯りがあります。期待、はじまりの予感、誰かへの想い。その灯は、もうあなたを前へ進ませはじめています。",
       advice:"灯が消えないうちに、始めたいことの道具を机の上に出すだけでかまいません。5分で終わります。灯りは、動いた分だけ大きくなります。",
-      step:"始めたいことの道具を、机に出す。"},
+      step:"始めたいことの道具を、机に出す。",
+      gentle:"今日は、灯りを大きくしようとしなくて大丈夫です。早めに横になるだけでも、じゅうぶんです。",
+      gentleStep:"早めに、横になる。"},
   惑:{body:"あなたは今、霧の中で足を止めています。「なんでこんな気分なんだろう」と、理由は自分でもまだ掴めていないのかもしれません。それは遭難ではありません。迷いが訪れるのは、あなたがこの先を大事に考えているからです。足を止めているのは、思慮です。",
       advice:"「正しい道」を探すのを、いったんやめてください。選択肢を紙に書き、気が楽になる方に○だけ付ける。決めなくていいです。霧は、歩いた人の後ろから晴れていきます。",
-      step:"選択肢を書き、気が楽な方に○を。"},
+      step:"選択肢を書き、気が楽な方に○を。",
+      gentle:"今日は、道を選ばなくて大丈夫です。迷ったまま、ひと休みするだけでもじゅうぶんです。",
+      gentleStep:"決めないまま、休む。"},
   温:{body:"あなたのまんなかには今、あたたかいものが息づいています。感謝、守りたいもの、ぬくもりの記憶。あなたは今、受け取ることも渡すこともできる場所に立っています。",
       advice:"そのあたたかさを、言葉にして一度外へ出してください。「ありがとう」でも「助かったよ」でも、一言で。ぬくもりは、言葉にすると届く形になります。",
-      step:"「ありがとう」を、一言だけ外へ。"},
+      step:"「ありがとう」を、一言だけ外へ。",
+      gentle:"今日は、誰かのために動かなくて大丈夫です。あたたかい毛布にくるまって、自分を休ませるだけでもじゅうぶんです。",
+      gentleStep:"あたたかい毛布に、くるまる。"},
 };
 
 /* ===== 主軸×副軸の組み合わせ（56通り・断定の鏡） ===== */
@@ -855,6 +893,18 @@ const PAIR = {
   温澄:"あたたかく、そして静か。人の話を聞くのに、最高の状態です。",
   温灯:"ぬくもりが、希望に変わりかけています。それは、誰かに渡した瞬間に完成します。",
   温惑:"誰にどうやさしくすればいいか、迷っています。その迷いごと、もうやさしさです。",
+};
+
+/* ===== 三つに通う糸の一文（主軸を除いて最も大きい軸 x の合計が3以上のとき、本文の直前に1行） ===== */
+const THREAD = {
+  疲:"三つの言葉と答えのあちこちに、疲れの影が少しずつ混じっていました。",
+  憂:"三つの言葉と答えの底に、小さな不安が静かに流れていました。",
+  熾:"三つの言葉と答えのどこかで、小さな火がずっと燻っていました。",
+  寂:"三つの言葉と答えの隙間に、ひとりの時間の気配がありました。",
+  澄:"三つの言葉と答えの奥に、澄んだ水のような落ち着きがありました。",
+  灯:"三つの言葉と答えのどこかに、小さな期待が見え隠れしていました。",
+  惑:"三つの言葉と答えのあいだを、迷いが行き来していました。",
+  温:"三つの言葉と答えの端々に、あたたかさが残っていました。",
 };
 
 /* ===== 結びの言葉（ランダム） ===== */
@@ -1281,6 +1331,7 @@ function startGarden(){
     setTimeout(()=>{ttl.classList.remove("active","exiting"); ttl.dataset.exited=""; startGarden();},520);
     return;
   }
+  rvCancel(); // 結果の「間」の途中で戻ってきたとき、鈴や墨が庭に残らないように
   playEvents=new Set();
   trackOnce("play-start");
   score={}; AXES.forEach(a=>score[a]=0);
@@ -1363,9 +1414,10 @@ function pickWord(w,el){
     trackOnce("words-complete");
     clearInterval(floatTimer);
     const used=new Set();
+    /* 問いは語ごとに1つ。その語の最高軸が使用済みなら、その語の a の中で次に高い未使用の軸を使う（使える軸がなければその語は飛ばす） */
     picked.forEach(p=>{
-      const top=Object.entries(p.a).sort((x,y)=>y[1]-x[1])[0][0];
-      if(!used.has(top)){used.add(top); qQueue.push({word:p.t,axis:top});}
+      const axis=Object.entries(p.a).sort((x,y)=>y[1]-x[1]).map(e=>e[0]).find(k=>!used.has(k));
+      if(axis){used.add(axis); qQueue.push({word:p.t,axis});}
     });
     setTimeout(()=>{show("question"); trackOnce("questions-start"); renderQuestion();},1300);
   }
@@ -1432,6 +1484,28 @@ function pickCore(p){
   return any>=0?any:0;
 }
 
+/* ===== 結果が出る瞬間の「間」=====
+   最後の答えを押してから 0.18 秒で renderResult が呼ばれ、そこを 0 として下の秒数で進む（CSS の --rv-* に渡す）。
+   墨がにじむ(0〜.8) → 結果カード(card) → 題が一字ずつ(title〜title+titleSpan+.3) → 落款と鈴(seal) → 冒頭の一言(plain) → 核心の見立て(core) → 残り(rest)。end で後片付け */
+const RV={card:.25, title:.3, titleSpan:.4, seal:1, plain:1.2, core:1.4, rest:1.6, end:2.4};
+let rvTimers=[];
+/* 演出の途中で庭へ戻る・結果を作り直すときに、残っている時計と墨を片づける */
+function rvCancel(){
+  rvTimers.forEach(clearTimeout); rvTimers=[];
+  document.body.classList.remove("rv-run");
+  document.querySelectorAll(".inkbloom").forEach(e=>e.remove());
+}
+/* 画面中央に墨の円がふわっと広がって薄れる（庭の墨はねと同じ SPLATS・inkrough） */
+function inkBloom(){
+  const NS="http://www.w3.org/2000/svg";
+  const sv=document.createElementNS(NS,"svg"), pa=document.createElementNS(NS,"path");
+  sv.setAttribute("viewBox","0 0 128 128"); sv.setAttribute("aria-hidden","true"); sv.classList.add("inkbloom");
+  pa.setAttribute("d",SPLATS[Math.floor(Math.random()*SPLATS.length)]);
+  pa.setAttribute("fill","rgba(29,26,21,.7)"); pa.setAttribute("filter","url(#inkrough)");
+  sv.appendChild(pa); document.body.appendChild(sv);
+  rvTimers.push(setTimeout(()=>sv.remove(),900));
+}
+
 function renderResult(){
   const sorted=AXES.map(a=>[a,score[a]]).sort((x,y)=>y[1]-x[1]);
   const p=sorted[0][0], s=sorted[1][0];
@@ -1445,7 +1519,15 @@ function renderResult(){
   const musubi=musubiPool[Math.floor(Math.random()*musubiPool.length)];
   const now=new Date();
   const date=`${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
-  LAST={p,s,title,musubi,words:picked.map(w=>w.t),date,oracles:answers.map(a=>a.refl),oi:core,step:BASE[p].step};
+  /* 重いときは、今日の一歩（結果画面）と札の step を、がんばらせない「やさしい版」に替える */
+  LAST={p,s,title,musubi,words:picked.map(w=>w.t),date,oracles:answers.map(a=>a.refl),oi:core,step:heavy?BASE[p].gentleStep:BASE[p].step};
+  /* 三つに通う糸：拾った語の a と答えの add の軸ごとの合計（＝score）のうち、主軸を除いて最大の軸 x が3以上のときだけ */
+  const x=sorted.find(e=>e[0]!==p);
+  const thread=x[1]>=3?THREAD[x[0]]:"";
+  const calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  rvCancel();
+  /* 題は「間」のあいだだけ一字ずつ包む（上から現れる）。動きを減らす設定のときは今までどおり素の文字 */
+  const vtitle=calm?title:[...title].map((c,i)=>`<span class="vc" style="animation-delay:${(RV.title+i*RV.titleSpan/Math.max(1,[...title].length-1)).toFixed(3)}s">${c}</span>`).join("");
   const card=document.getElementById("rcard");
   card.innerHTML=`
     <div class="k-band"></div>
@@ -1457,15 +1539,16 @@ function renderResult(){
           <div class="r-plain"><span class="nw">${PLAIN[p]}と、</span><wbr>${PLAIN[s].length>=5?`少しの<wbr><span class="nw">${PLAIN[s]}。</span>`:`<span class="nw">少しの${PLAIN[s]}。</span>`}</div>
           <div class="r-core${answers.length>1?"":" last"}">${mitateP(answers[core],core)}</div>
           ${answers.length>1?`<div class="r-mitate">${rest}</div>`:""}
+          ${thread?`<div class="r-thread">${bx(thread)}</div>`:""}
           <div class="r-body">${bx(BASE[p].body)}</div>
           <div class="r-pair">${bx(PAIR[p+s]||"")}</div>
           <div class="r-hana">❖</div>
           <div class="r-words">${picked.map(w=>`<div class="r-wline"><span class="r-wname">${w.t}</span><span class="r-wc">${bx(w.c)}</span></div>`).join("")}</div>
-          <div class="r-advice"><span class="r-ippo">今日の一歩</span>${bx(BASE[p].advice)}</div>
+          <div class="r-advice"><span class="r-ippo">今日の一歩</span>${bx(heavy?BASE[p].gentle:BASE[p].advice)}</div>
           <div class="r-musubi">${musubi}</div>
         </div>
         <div class="r-rail">
-          <div class="r-vtitle">${title}</div>
+          <div class="r-vtitle">${vtitle}</div>
           <div class="seal">${SEAL[p]}</div>
         </div>
       </div>
@@ -1486,10 +1569,24 @@ function renderResult(){
       <p class="r-note">${bx("墨詠みは、診断や占いではありません。いまの気持ちを眺めるための、小さな庭です。")}</p>
     </div>`;
   trackOnce("play-result");
-  Oto.rin();
+  card.classList.remove("fade-slow","rv"); void card.offsetWidth;
+  if(calm){
+    /* 動きを減らす設定：「間」の演出は省いて、今までどおりすぐ出す */
+    Oto.rin();
+    show("result");
+    document.getElementById("result").scrollTop=0;
+    card.classList.add("fade-slow");
+    return;
+  }
+  Object.entries(RV).forEach(([k,v])=>card.style.setProperty("--rv-"+k,v+"s"));
+  document.body.classList.add("rv-run");
+  card.classList.add("rv");
+  inkBloom();
   show("result");
   document.getElementById("result").scrollTop=0;
-  card.classList.remove("fade-slow"); void card.offsetWidth; card.classList.add("fade-slow");
+  /* 落款を押すと同時に鈴。その前に庭へ戻っていたら鳴らさない（rvCancel が止める） */
+  rvTimers.push(setTimeout(()=>{ if(document.body.dataset.screen==="result") Oto.rin(); },RV.seal*1000));
+  rvTimers.push(setTimeout(()=>document.body.classList.remove("rv-run"),RV.end*1000));
 }
 
 /* ===== 結果札（水墨の共有画像）の生成 ===== */
