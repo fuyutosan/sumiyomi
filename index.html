@@ -583,8 +583,29 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 #overlay{position:fixed;inset:0;z-index:20;background:rgba(29,26,21,.62);backdrop-filter:blur(5px);
   display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px}
 #overlay.active{display:flex}
-#overlay img{max-width:min(88vw,420px);max-height:66vh;border-radius:3px;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+#overlay img{display:block;max-width:min(88vw,420px);max-height:66vh;border-radius:3px}
+.fuda-wrap{position:relative;z-index:1;border-radius:3px;box-shadow:0 24px 80px rgba(0,0,0,.55)}
 #overlay .hint{color:#f0ede4;font-size:.82rem;letter-spacing:.15em}
+/* 札が書かれていく演出（fudaWrite）。書いているあいだは和紙色の明るい台、落款で暗い台に戻る。
+   ボタンは書き終わるまで隠す（visibility で押せなくする）。札の本体（img）は層の下に隠しておき、最後に層と入れ替える */
+#overlay{transition:background-color .8s ease}
+#overlay.fl-light{background:rgba(var(--mist),.92)}
+#overlay.writing #fuda{opacity:0}
+#overlay .hint,#overlay .icon-row,#overlay .overlay-sub{transition:opacity .5s ease}
+#overlay.writing .hint,#overlay.writing .icon-row,#overlay.writing .overlay-sub{opacity:0;visibility:hidden}
+.fl-layers{position:absolute;inset:0;overflow:hidden;border-radius:3px;pointer-events:none}
+.fl-layers canvas{position:absolute;display:block}
+/* 縦の列を上から書いていく：やわらかい境目のマスクを下へ送る */
+.fl-wipe{-webkit-mask-image:linear-gradient(#000 40%,transparent 60%);mask-image:linear-gradient(#000 40%,transparent 60%);
+  -webkit-mask-size:100% 250%;mask-size:100% 250%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:0 0;mask-position:0 0}
+.fl-word{position:absolute;left:0;top:0;z-index:2;pointer-events:none;writing-mode:vertical-rl;white-space:nowrap;
+  font-family:"Yuji Boku",serif;line-height:1;color:#1d1a15;transform:translate(-50%,-50%)}
+.fl-blot{position:absolute;z-index:2;pointer-events:none;overflow:visible}
+.fl-thread{position:absolute;left:0;top:0;width:100%;height:100%;z-index:2;pointer-events:none;overflow:visible;filter:blur(.4px)}
+/* 飛ばせることに気づけるよう、薄すぎない濃さと大きさにする（代弁：3人とも気づかなかった） */
+.fl-hint{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));z-index:2;text-align:center;
+  font-size:.84rem;letter-spacing:.16em;color:var(--ink-70);pointer-events:none}
 .icon-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
 .icon-btn{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;color:#fff;
   display:flex;align-items:center;justify-content:center;transition:.25s;box-shadow:0 6px 18px rgba(0,0,0,.25)}
@@ -766,7 +787,7 @@ body.rv-run #result{transition:opacity .3s ease .2s}
 
 <!-- 結果札オーバーレイ -->
 <div id="overlay">
-  <img id="fuda" alt="結果札">
+  <div class="fuda-wrap" id="fudawrap"><img id="fuda" alt="結果札"></div>
   <div class="hint">長押し・右クリックでも保存できます</div>
   <div class="icon-row">
     <button class="icon-btn save" onclick="saveFuda()" aria-label="札を保存" title="札を保存">
@@ -782,7 +803,7 @@ body.rv-run #result{transition:opacity .3s ease .2s}
   </div>
   <div class="overlay-sub">
     <button onclick="retryGarden()">もう一度試す</button>
-    <button onclick="document.getElementById('overlay').classList.remove('active')">閉じる</button>
+    <button onclick="closeFuda()">閉じる</button>
   </div>
 </div>
 
@@ -1962,93 +1983,303 @@ function packOracle(ph,maxW,maxH){
   for(let size=46;size>=34;size-=2){ const r=tryPack(size,true); if(r) return r; }
   return null;
 }
-async function makeFuda(){
-  if(!LAST) return;
-  Oto.stamp();
-  trackOnce("make-fuda");
+/* 札は部品ごとに描く。同じ部品から「保存・共有用の1枚」と「書かれていく演出の層」を作るので、2つの絵は一致する。
+   紙だけの画像（黒い台なし）。ストーリーで拡大してもぼやけないよう1.5倍で描く */
+const FW=660, FH=1680, FSC=1.5, F_INK="#1d1a15", F_RED="#b03a20", F_REDA="rgba(176,58,32,.85)";
+/* 部品の枠は偶数にそろえる（1.5倍しても画素の境目がずれず、層と1枚の見た目が同じになる） */
+function evenBox(x,y,w,h){
+  const x0=Math.max(0,Math.floor(x/2)*2), y0=Math.max(0,Math.floor(y/2)*2);
+  const x1=Math.min(FW,Math.ceil((x+w)/2)*2), y1=Math.min(FH,Math.ceil((y+h)/2)*2);
+  return [x0,y0,x1-x0,y1-y0];
+}
+async function fudaParts(){
+  const cx=FW/2, P=POET[LAST.p], S=POET[LAST.s], parts=[], no=`第${kanjiNum(fudaNo(LAST.p,LAST.s))}番`, oracle=LAST.oracles[LAST.oi]||"";
+  /* 書体は文字の範囲ごとに分けて届くので、札に載る字を渡して全部そろってから描く
+     （字を渡さないと、まだ届いていない字だけ別の書体で描かれることがあった） */
   await Promise.all([
-    document.fonts.load('140px "Yuji Boku"'),
-    document.fonts.load('64px "Yuji Syuku"'),
-    document.fonts.load('34px "Shippori Mincho"'),
+    document.fonts.load('140px "Yuji Boku"',no+P+S+"のなかの"+LAST.words.join("")+SEAL[LAST.p]),
+    document.fonts.load('64px "Yuji Syuku"',oracle),
+    document.fonts.load('34px "Shippori Mincho"',kanjiDate()+"墨詠み御籤― 託宣拾った言の葉今日の一歩"+LAST.step),
   ]);
-  // 紙だけの画像（黒い台なし）。ストーリーで拡大してもぼやけないよう1.5倍で描く
-  const W=660,H=1680,SC=1.5, INK="#1d1a15", RED="#b03a20", REDA="rgba(176,58,32,.85)";
-  const cv=document.createElement("canvas"); cv.width=W*SC; cv.height=H*SC;
-  const ctx=cv.getContext("2d");
-  let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
-  const hs=(t,x,y,size,font,color,ls)=>drawSpaced(ctx,t,x,y,size,font,color,ls);
-  // 細長い紙（少し傾ける）
-  const pw=W,ph=H,px=0,py=0;
-  ctx.save(); ctx.scale(SC,SC);
-  const g=ctx.createLinearGradient(0,py,0,py+ph); g.addColorStop(0,"#f8f5ec"); g.addColorStop(1,"#efe9d8");
-  ctx.fillStyle=g; ctx.fillRect(px,py,pw,ph);
-  for(let i=0;i<260;i++){ ctx.fillStyle=`rgba(29,26,21,${.012+rnd()*.03})`; ctx.fillRect(px+rnd()*pw,py+rnd()*ph,1+rnd()*3,.6+rnd()*1.4); }
-  // 三つ折りの跡
-  [py+ph/3,py+ph*2/3].forEach(fy=>{
-    const f=ctx.createLinearGradient(0,fy-18,0,fy+18);
-    f.addColorStop(0,"rgba(0,0,0,0)"); f.addColorStop(.5,"rgba(0,0,0,.09)"); f.addColorStop(.52,"rgba(255,255,255,.5)"); f.addColorStop(1,"rgba(0,0,0,0)");
-    ctx.fillStyle=f; ctx.fillRect(px,fy-18,pw,36);
+  const hs=(ctx,t,x,y,size,font,color,ls)=>drawSpaced(ctx,t,x,y,size,font,color,ls);
+  const add=(k,box,draw)=>parts.push({k,box:evenBox(...box),draw});
+  /* 縦書き一列の部品（句読点は右上に出るぶん枠を広げる） */
+  const vcol=(k,t,x,y,size,font,color,gap)=>add(k,[x-size*.75,y-size*.7,size*1.95,vLen(t,size,gap)+size*.95],ctx=>vtextP(ctx,t,x,y,size,font,color,gap));
+  // 紙・三つ折りの跡・朱の罫・頭（日付と御籤名）
+  add("paper",[0,0,FW,FH],ctx=>{
+    let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    const g=ctx.createLinearGradient(0,0,0,FH); g.addColorStop(0,"#f8f5ec"); g.addColorStop(1,"#efe9d8");
+    ctx.fillStyle=g; ctx.fillRect(0,0,FW,FH);
+    for(let i=0;i<260;i++){ ctx.fillStyle=`rgba(29,26,21,${.012+rnd()*.03})`; ctx.fillRect(rnd()*FW,rnd()*FH,1+rnd()*3,.6+rnd()*1.4); }
+    [FH/3,FH*2/3].forEach(fy=>{
+      const f=ctx.createLinearGradient(0,fy-18,0,fy+18);
+      // 折り目は控えめに（演出で札を大きく見せたとき灰色の帯に見えないよう、.09→.065）
+      f.addColorStop(0,"rgba(0,0,0,0)"); f.addColorStop(.5,"rgba(0,0,0,.065)"); f.addColorStop(.52,"rgba(255,255,255,.4)"); f.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.fillStyle=f; ctx.fillRect(0,fy-18,FW,36);
+    });
+    ctx.strokeStyle="rgba(176,58,32,.8)"; ctx.lineWidth=4; ctx.strokeRect(30,30,FW-60,FH-60);
+    ctx.lineWidth=1.5; ctx.strokeRect(42,42,FW-84,FH-84);
+    hs(ctx,kanjiDate(),cx,70,22,'"Shippori Mincho"',F_REDA,4);
+    hs(ctx,"墨詠み御籤",cx,112,34,'"Shippori Mincho"',F_RED,18);
+    ctx.strokeStyle="rgba(176,58,32,.6)"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(70,150); ctx.lineTo(FW-70,150); ctx.stroke();
   });
-  // 朱の罫
-  ctx.strokeStyle="rgba(176,58,32,.8)"; ctx.lineWidth=4; ctx.strokeRect(px+30,py+30,pw-60,ph-60);
-  ctx.lineWidth=1.5; ctx.strokeRect(px+42,py+42,pw-84,ph-84);
-  // 頭：日付（朱）・御籤名・番号
-  hs(kanjiDate(),W/2,py+70,22,'"Shippori Mincho"',REDA,4);
-  hs("墨詠み御籤",W/2,py+112,34,'"Shippori Mincho"',RED,18);
-  ctx.strokeStyle="rgba(176,58,32,.6)"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px+70,py+150); ctx.lineTo(px+pw-70,py+150); ctx.stroke();
-  hs(`第${kanjiNum(fudaNo(LAST.p,LAST.s))}番`,W/2,py+215,66,'"Yuji Boku"',INK,14);
-  // 題（主軸 / のなかの / 副軸）
-  const cx=W/2, P=POET[LAST.p], S=POET[LAST.s];
-  // 題の文字数に合わせて、一つ目の折り目（託宣の段）を越えない大きさにする
+  add("no",[30,160,FW-60,110],ctx=>hs(ctx,no,cx,215,66,'"Yuji Boku"',F_INK,14));
+  // 題（主軸 / のなかの / 副軸）。題の文字数に合わせて、一つ目の折り目（託宣の段）を越えない大きさにする
   const tsize=(t,max)=>Math.min(max,Math.floor(290/[...t].length)-6);
-  vtextP(ctx,P,cx+110,py+270,tsize(P,118),'"Yuji Boku"',INK,6);
-  vtextP(ctx,"のなかの",cx,py+300,40,'"Yuji Boku"',"rgba(29,26,21,.5)",10);
-  vtextP(ctx,S,cx-110,py+270,tsize(S,96),'"Yuji Boku"',INK,6);
+  /* 題は1字ずつの部品にする（演出で一字ずつ墨で書くため。vtextP と同じ位置に描くので1枚の絵は変わらない） */
+  const vchars=(k,t,x,y,size,font,color,gap)=>{
+    let cy=y;
+    [...t].forEach((ch,j)=>{
+      const pu=isPunc(ch), x0=pu?x+size*.55:x, y0=pu?cy-size*.55:cy;
+      add(k+j,[x0-size*.75,y0-size*.3,size*1.5,size*1.6],ctx=>{ ctx.font=size+"px "+font; ctx.fillStyle=color; ctx.textAlign="center"; ctx.textBaseline="top"; ctx.fillText(ch,x0,y0); });
+      cy+=pu?size*.45:size+gap;
+    });
+    return [...t].length;
+  };
+  const nP=vchars("tP",P,cx+110,270,tsize(P,118),'"Yuji Boku"',F_INK,6);
+  const nNo=vchars("tNo","のなかの",cx,300,40,'"Yuji Boku"',"rgba(29,26,21,.5)",10);
+  const nS=vchars("tS",S,cx-110,270,tsize(S,96),'"Yuji Boku"',F_INK,6);
   // 託宣（見出しは朱、中身は黒）
-  const oy=py+ph/3+70;
-  hs("― 託 宣 ―",W/2,oy,32,'"Shippori Mincho"',RED,6);
-  const top=oy+50, bottom=py+ph*2/3-30;
-  const lay=packOracle(await phrases(LAST.oracles[LAST.oi]||""),pw-150,bottom-top);
+  const oy=FH/3+70, top=oy+50, bottom=FH*2/3-30;
+  add("oHead",[60,oy-30,FW-120,60],ctx=>hs(ctx,"― 託 宣 ―",cx,oy,32,'"Shippori Mincho"',F_RED,6));
+  const lay=packOracle(await phrases(oracle),FW-150,bottom-top);
   if(lay){
     const start=cx+lay.colW*(lay.cols.length-1)/2;
-    lay.cols.forEach((t,i)=>vtextP(ctx,t,start-i*lay.colW,top,lay.size,'"Yuji Syuku"',INK,lay.gap));
+    lay.cols.forEach((t,i)=>vcol("o"+i,t,start-i*lay.colW,top,lay.size,'"Yuji Syuku"',F_INK,lay.gap));
   }
-  // 拾った言の葉
-  const by=py+ph*2/3+60;
-  hs("拾った言の葉",W/2,by,30,'"Shippori Mincho"',RED,10);
-  const tz=[cx+180,cx,cx-180];
-  LAST.words.forEach((w,i)=>{
-    ctx.fillStyle="rgba(29,26,21,.7)"; ctx.beginPath(); ctx.arc(tz[i],by+60,5,0,7); ctx.fill();
-    // 言の葉は「今日の一歩」の見出しにかからない長さに収める（縦195pxまで）
-    vtextP(ctx,w,tz[i],by+85,Math.min(64,Math.floor(195/[...w].length)-4),'"Yuji Boku"',INK,4);
+  // 拾った言の葉。言の葉は「今日の一歩」の見出しにかからない長さに収める（縦195pxまで）
+  const by=FH*2/3+60, tz=[cx+180,cx,cx-180];
+  add("wHead",[60,by-28,FW-120,56],ctx=>hs(ctx,"拾った言の葉",cx,by,30,'"Shippori Mincho"',F_RED,10));
+  const slots=LAST.words.map((w,i)=>{
+    const ws=Math.min(64,Math.floor(195/[...w].length)-4);
+    add("w"+i,[tz[i]-Math.max(12,ws*.75),by+50,Math.max(24,ws*1.5),35+vLen(w,ws,4)+ws*.3],ctx=>{
+      ctx.fillStyle="rgba(29,26,21,.7)"; ctx.beginPath(); ctx.arc(tz[i],by+60,5,0,7); ctx.fill();
+      vtextP(ctx,w,tz[i],by+85,ws,'"Yuji Boku"',F_INK,4);
+    });
+    return {w,x:tz[i],y:by+85,size:ws,h:vLen(w,ws,4)};
   });
   // 今日の一歩：文節で折り返す。幅は右下の落款にかからない範囲（中央から左右180px）
-  hs("今日の一歩",W/2,by+300,28,'"Shippori Mincho"',RED,8);
-  const STEP_FONT='"Shippori Mincho"', stepW=360;
+  add("stHead",[60,by+274,FW-120,52],ctx=>hs(ctx,"今日の一歩",cx,by+300,28,'"Shippori Mincho"',F_RED,8));
+  const STEP_FONT='"Shippori Mincho"', stepW=360, mctx=document.createElement("canvas").getContext("2d"), stepPh=await phrases(LAST.step);
   let stepSize=32, lines;
   for(;stepSize>=26;stepSize-=2){
-    ctx.font=stepSize+"px "+STEP_FONT;
-    const wOf=t=>ctx.measureText(t).width+2*(t.length-1);
+    mctx.font=stepSize+"px "+STEP_FONT;
+    const wOf=t=>mctx.measureText(t).width+2*(t.length-1);
     lines=[]; let cur="";
-    for(const w of await phrases(LAST.step)){
+    for(const w of stepPh){
       if(!cur||wOf(cur+w)<=stepW){ cur+=w; } else { lines.push(cur); cur=w; }
     }
     if(cur) lines.push(cur);
     if(lines.length<=3&&lines.every(l=>wOf(l)<=stepW)) break;
   }
-  lines.forEach((l,i)=>hs(l,W/2,by+345+i*42,stepSize,STEP_FONT,INK,2));
+  lines.forEach((l,i)=>add("st"+i,[30,by+319+i*42,FW-60,52],ctx=>hs(ctx,l,cx,by+345+i*42,stepSize,STEP_FONT,F_INK,2)));
   // 落款
-  ctx.save(); ctx.translate(px+pw-100,py+ph-100); ctx.rotate(-.06); ctx.fillStyle=RED;
-  ctx.beginPath(); ctx.roundRect(-42,-42,84,84,8); ctx.fill();
-  ctx.fillStyle="#f8efe3"; ctx.font='50px "Yuji Boku"'; ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(SEAL[LAST.p],0,3); ctx.restore();
-  ctx.restore();
-  const url=cv.toDataURL("image/png");
-  document.getElementById("fuda").src=url;
-  document.getElementById("overlay").classList.add("active");
+  add("seal",[FW-164,FH-164,128,128],ctx=>{
+    ctx.translate(FW-100,FH-100); ctx.rotate(-.06); ctx.fillStyle=F_RED;
+    ctx.beginPath(); ctx.roundRect(-42,-42,84,84,8); ctx.fill();
+    ctx.fillStyle="#f8efe3"; ctx.font='50px "Yuji Boku"'; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(SEAL[LAST.p],0,3);
+  });
+  return {parts,slots,cols:lay?lay.cols.length:0,steps:lines.length,nP,nNo,nS,by};
+}
+/* 部品を1枚に描く（box を渡すとその範囲だけの層になる） */
+function drawParts(parts,box){
+  const [x,y,w,h]=box||[0,0,FW,FH], cv=document.createElement("canvas");
+  cv.width=w*FSC; cv.height=h*FSC;
+  const ctx=cv.getContext("2d"); ctx.scale(FSC,FSC); ctx.translate(-x,-y);
+  parts.forEach(p=>{ ctx.save(); p.draw(ctx); ctx.restore(); });
+  return cv;
+}
+const FL={run:null,busy:false};
+async function makeFuda(){
+  if(!LAST||FL.busy||FL.run) return;
+  FL.busy=true;
+  Oto.tap(); // 札を描き終えるまで遅い端末だと1秒近くかかるので、押した手応えを先に返す
+  trackOnce("make-fuda");
+  try{
+    const F=await fudaParts(), img=document.getElementById("fuda");
+    if(document.body.dataset.screen!=="result") return; // 書体を待つあいだに庭へ戻っていたら出さない
+    img.src=drawParts(F.parts).toDataURL("image/png");
+    try{ await img.decode(); }catch(e){}
+    if(!img.complete) await new Promise(res=>{ img.onload=img.onerror=res; });
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches||!img.naturalWidth){
+      /* 動きを減らす設定（または画像の大きさが取れないとき）：書かれていく演出は省いて、今までどおりすぐ出す */
+      Oto.stamp();
+      document.getElementById("overlay").classList.add("active");
+      focusFudaSave();
+    }else fudaWrite(F);
+  }finally{ FL.busy=false; }
+}
+/* 札が出たら、キーボードの位置を裏の「札をつくる」から保存ボタンへ移す（Enter で札を作り直さないように） */
+function focusFudaSave(){
+  /* ボタンは見えるようになる瞬間にまだ「隠れている」扱い（.icon-btn の transition が visibility にもかかる）なので、一呼吸おく */
+  setTimeout(()=>{
+    const ov=document.getElementById("overlay"), b=ov.querySelector(".icon-btn.save");
+    if(b&&ov.classList.contains("active")&&!ov.contains(document.activeElement)) b.focus({preventScroll:true});
+  },80);
+}
+/* 札が書かれていく演出：拾った言の葉が墨になって札の下の自分の場所へ流れ込み、そこから墨の筋が題へ上って、
+   題が一字ずつ → 託宣が右の列から → 今日の一歩と書かれ、落款で仕上がる（第11回の小会議で決定）。
+   触る・キーを押すとすぐ仕上がる。2回目からは約半分の時間 */
+function fudaWrite(F){
+  const ov=document.getElementById("overlay"), wrap=document.getElementById("fudawrap");
+  let seen=false; try{ seen=localStorage.getItem("sumiyomi-fuda")==="1"; }catch(e){}
+  const k=seen?.5:1, T=ms=>ms*k, anims=[], timers=[], extras=[];
+  const A=(el,kf,delay,dur,o)=>{ const a=el.animate(kf,Object.assign({delay:T(delay),duration:T(dur),easing:"ease-out",fill:"both"},o)); anims.push(a); return a; };
+  const at=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
+  ov.classList.add("active","writing","fl-light"); ov.setAttribute("aria-busy","true");
+  const layers=document.createElement("div"), cv={};
+  layers.className="fl-layers";
+  F.parts.forEach(p=>{
+    const c=drawParts([p],p.box), [x,y,w,h]=p.box;
+    Object.assign(c.style,{left:x/FW*100+"%",top:y/FH*100+"%",width:w/FW*100+"%",height:h/FH*100+"%"});
+    cv[p.k]=c; layers.appendChild(c);
+  });
+  wrap.appendChild(layers);
+  /* 書いているあいだはボタンが隠れて場所が空くので、札を画面の真ん中へ寄せて大きく見せる（上下40pxは空ける）。
+     落款を押すと元の大きさと位置へ収まり、ボタンが現れる */
+  const r0=wrap.getBoundingClientRect(), o=ov.getBoundingClientRect();
+  const Z=Math.max(1,Math.min(1.5,(o.height-80)/r0.height,(o.width-32)/r0.width));
+  const zy=(o.top+o.height/2)-(r0.top+r0.height/2), ZT=`translateY(${zy}px) scale(${Z})`;
+  /* 札の座標（660×1680）→ 画面の座標（大きくした札の上で） */
+  const u=r0.width*Z/FW, rl=r0.left+r0.width*(1-Z)/2-o.left, rt=r0.top+zy+r0.height*(1-Z)/2-o.top;
+  const pt=(x,y)=>[rl+x*u, rt+y*u];
+  const NS="http://www.w3.org/2000/svg";
+  const BLEED=[{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0)"}];
+  const bleed=(el,d,dur)=>el&&A(el,BLEED,d,dur||450);
+  /* 一字を墨で置く：にじんで少し大きい所から、くっきり落ち着く */
+  const ink=(el,d,dur)=>el&&A(el,[{opacity:0,filter:"blur(5px)",transform:"scale(1.12)"},{opacity:1,offset:.45},{opacity:1,filter:"blur(0)",transform:"none"}],d,dur||460);
+  /* 託宣の列：やわらかい境目のマスクを上から下へ送る */
+  const WIPE=[{opacity:0,filter:"blur(2px)",maskPosition:"0 100%",webkitMaskPosition:"0 100%"},{opacity:1,offset:.15},{opacity:1,filter:"blur(0)",maskPosition:"0 0",webkitMaskPosition:"0 0"}];
+  const wipe=(el,d,dur)=>{ if(!el) return; el.classList.add("fl-wipe"); A(el,WIPE,d,dur,{easing:"cubic-bezier(.35,.1,.45,1)"}); };
+  /* 墨のにじみ：中心が濃く外へ薄れる不規則な形（庭の墨はねと同じ形）。ふわっと広がって引く */
+  let bn=0;
+  const blot=(x,y,size,d,dur,alpha,rgb)=>at(d,()=>{
+    const sv=document.createElementNS(NS,"svg"), [bx,bt]=pt(x,y), id="flg"+(++bn), c=`rgb(${rgb||"29,26,21"})`;
+    sv.setAttribute("viewBox","0 0 128 128"); sv.setAttribute("aria-hidden","true"); sv.classList.add("fl-blot");
+    sv.innerHTML=`<defs><radialGradient id="${id}"><stop offset="0" stop-color="${c}" stop-opacity="${alpha}"/><stop offset=".55" stop-color="${c}" stop-opacity="${alpha*.4}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs><path d="${SPLATS[Math.floor(Math.random()*SPLATS.length)]}" fill="url(#${id})" filter="url(#inkrough)"/>`;
+    Object.assign(sv.style,{left:bx+"px",top:bt+"px",width:size*u+"px",height:size*u+"px"});
+    ov.appendChild(sv); extras.push(sv);
+    const a=sv.animate([{transform:"translate(-50%,-50%) scale(.3)",opacity:0},{opacity:1,offset:.22},{transform:"translate(-50%,-50%) scale(1)",opacity:0}],{duration:T(dur),easing:"ease-out",fill:"both"});
+    anims.push(a); a.onfinish=()=>sv.remove();
+  });
+  /* 墨の筋：着地した言の葉から題の書き出しへ一本上る。出発点が太く軽くにじみ、先へ細くなる筆の線
+     （太さが一定の線だと髪の毛やひっかき傷に見えた。第11回の小会議）。先細りの帯を、曲線に沿って伸びるマスクで見せる */
+  const thread=(x0,y0,x1,y1,d,dur)=>at(d,()=>{
+    const [ax,ay]=pt(x0,y0), [bx,bt]=pt(x1,y1), c1=[ax-34*u,ay-(ay-bt)*.35], c2=[bx+26*u,bt+(ay-bt)*.42];
+    const P=t=>{ const m=1-t; return [m*m*m*ax+3*m*m*t*c1[0]+3*m*t*t*c2[0]+t*t*t*bx, m*m*m*ay+3*m*m*t*c1[1]+3*m*t*t*c2[1]+t*t*t*bt]; };
+    const band=(w0,w1)=>{ // 太さ w0→w1（札の単位）の先細りの帯
+      const L=[], R=[], N=32;
+      for(let i=0;i<=N;i++){
+        const t=i/N, p=P(t), a=P(Math.max(0,t-.01)), b=P(Math.min(1,t+.01)), dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1, w=(w0+(w1-w0)*t)*u/2;
+        L.push([p[0]-dy/l*w,p[1]+dx/l*w]); R.unshift([p[0]+dy/l*w,p[1]-dx/l*w]);
+      }
+      return "M"+L.concat(R).map(q=>q[0].toFixed(1)+" "+q[1].toFixed(1)).join(" L")+"Z";
+    };
+    const sv=document.createElementNS(NS,"svg"), id="flm"+(++bn);
+    sv.setAttribute("aria-hidden","true"); sv.classList.add("fl-thread");
+    sv.innerHTML=`<defs><mask id="${id}" maskUnits="userSpaceOnUse"><path d="M${ax} ${ay} C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${bx} ${bt}" fill="none" stroke="#fff" stroke-width="${24*u}" stroke-linecap="round"/></mask></defs>`
+      +`<g mask="url(#${id})"><path d="${band(16,4)}" fill="rgba(29,26,21,.12)"/><path d="${band(6,1.4)}" fill="rgba(29,26,21,.55)"/></g>`;
+    ov.appendChild(sv); extras.push(sv);
+    // 線の長さは曲線を細かく区切って測る（mask の中の path の getTotalLength はブラウザによって当てにできない）
+    let L=0, prev=P(0);
+    for(let i=1;i<=40;i++){ const q=P(i/40); L+=Math.hypot(q[0]-prev[0],q[1]-prev[1]); prev=q; }
+    L=Math.ceil(L*1.02);
+    const mp=sv.querySelector("mask path"); mp.style.strokeDasharray=L+"px";
+    anims.push(mp.animate([{strokeDashoffset:L+"px"},{strokeDashoffset:"0px"}],{duration:T(dur),easing:"cubic-bezier(.45,0,.6,1)",fill:"both"}));
+    anims.push(sv.animate([{opacity:1},{opacity:1,offset:.42},{opacity:0}],{duration:T(dur*2.6),fill:"both"}));
+  });
+  let stamped=false, revealed=false;
+  const stampNow=()=>{ if(stamped) return; stamped=true; Oto.stamp(); ov.classList.remove("fl-light"); };
+  /* ボタンを出す（札が元の大きさへ収まり始めるのと同時）。ここからは触っても飛ばさない */
+  const reveal=()=>{
+    if(revealed) return; revealed=true;
+    ov.removeEventListener("click",skip); document.removeEventListener("keydown",skipKey,true);
+    ov.classList.remove("writing"); ov.removeAttribute("aria-busy"); hint.remove();
+    focusFudaSave();
+  };
+  const end=()=>{
+    if(FL.run!==run) return;
+    FL.run=null;
+    removeEventListener("resize",end);
+    timers.forEach(clearTimeout);
+    anims.forEach(a=>{ try{ a.finish(); }catch(e){} });
+    extras.forEach(e=>e.remove());
+    stampNow(); reveal(); ov.classList.remove("fl-light");
+    requestAnimationFrame(()=>layers.remove());
+    try{ localStorage.setItem("sumiyomi-fuda","1"); }catch(e){}
+  };
+  /* 飛ばす：click で受ける（pointerdown だと、指を離した所に現れたボタンが押されてしまう） */
+  const skip=()=>{ if(FL.run!==run||revealed) return; trackOnce("fuda-skip"); end(); };
+  /* キー：修飾キーだけ・組み合わせ・Tab では飛ばさない。Enter・空白・Esc は裏のボタンに届かないよう止める */
+  const skipKey=e=>{
+    if(e.ctrlKey||e.metaKey||e.altKey||["Tab","Shift","Control","Alt","Meta","CapsLock"].includes(e.key)) return;
+    if(e.key==="Enter"||e.key===" "||e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); }
+    skip();
+  };
+  const run={end}; FL.run=run;
+  ov.addEventListener("click",skip); document.addEventListener("keydown",skipKey,true);
+  addEventListener("resize",end); // 画面を回す・窓の幅を変えると座標が合わなくなるので、すぐ仕上げる
+
+  // 1. 台と紙
+  A(ov,[{opacity:0},{opacity:1}],0,300);
+  A(wrap,[{opacity:0,transform:`translateY(${zy+14}px) scale(${Z*.985})`},{opacity:1,transform:ZT}],0,480);
+  bleed(cv.no,250,450);
+  const hint=document.createElement("div"); hint.className="fl-hint"; hint.textContent="触れると、すぐに仕上がります";
+  ov.appendChild(hint); extras.push(hint); A(hint,[{opacity:0},{opacity:1}],600,400);
+  // 2. 拾った言の葉が、札の中ほどに大きく浮かぶ
+  const sx=[FW/2+150,FW/2,FW/2-150];
+  const words=F.slots.map((s,i)=>{
+    const big=Math.min(110,Math.floor(380/[...s.w].length)), el=document.createElement("div"), [x0,y0]=pt(sx[i],860);
+    el.className="fl-word"; el.textContent=s.w; el.setAttribute("aria-hidden","true");
+    Object.assign(el.style,{fontSize:big*u+"px",letterSpacing:(4/s.size)+"em",left:x0+"px",top:y0+"px"});
+    ov.appendChild(el); extras.push(el); bleed(el,300+i*100,380);
+    return {el,s,big,x0,y0};
+  });
+  // 3. 言の葉が墨になって（縦に伸び、尾を引き、墨の灰へ）、札の下の自分の場所へ流れ込む
+  bleed(cv.wHead,1100,450);
+  words.forEach((w,i)=>{
+    const s=w.s, [x1,y1]=pt(s.x,s.y+s.h/2), dx=x1-w.x0, dy=y1-w.y0, sc=s.size/w.big, m=(1+sc)/2, d=700+i*130, land=d+650;
+    A(w.el,[
+      {transform:"translate(-50%,-50%)",opacity:1,filter:"blur(0)",color:"#1d1a15",textShadow:"0 0 0 rgba(29,26,21,0)"},
+      {transform:`translate(-50%,-50%) translate(${dx*.5+(1-i)*14*u}px,${dy*.45}px) scale(${m*.92},${m*1.16})`,opacity:1,filter:"blur(1.2px)",color:"rgba(29,26,21,.8)",textShadow:`0 ${-12*u}px ${7*u}px rgba(29,26,21,.24)`,offset:.5},
+      {opacity:.9,offset:.8}, // 着地の直前まで濃さを残す（3語が宙で同時に薄れて札が空に見えないように）
+      {transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) scale(${sc*.9},${sc*1.22})`,opacity:0,filter:"blur(1.8px)",color:"rgba(29,26,21,.6)",textShadow:`0 ${-18*u}px ${10*u}px rgba(29,26,21,0)`}
+    ],d,650,{easing:"cubic-bezier(.45,0,.3,1)",fill:"forwards"});
+    bleed(cv["w"+i],land-120,360);
+    blot(s.x,s.y+s.h*.4,Math.max(110,s.h*1.3),land-60,600,.32);
+    at(land,()=>Oto.drip(.06));
+  });
+  // 4. 着地した言の葉から墨の筋が題へ上り、題が一字ずつ書かれる
+  thread(FW/2,F.by+52,FW/2+110,282,1480,300);
+  let t=1780;
+  at(t,()=>Oto.plop());
+  for(let j=0;j<F.nP;j++) ink(cv["tP"+j],t+j*170);
+  for(let j=0;j<F.nNo;j++) ink(cv["tNo"+j],t+F.nP*170-120+j*70,360);
+  const tS0=t+F.nP*170+150;
+  for(let j=0;j<F.nS;j++) ink(cv["tS"+j],tS0+j*170);
+  t=tS0+Math.max(0,F.nS-1)*170+300;
+  // 5. 託宣を右の列から
+  bleed(cv.oHead,t-200,400);
+  const st=Math.min(110,550/Math.max(1,F.cols));
+  for(let i=0;i<F.cols;i++) wipe(cv["o"+i],t+i*st,400);
+  t+=Math.max(0,F.cols-1)*st+400;
+  // 6. 今日の一歩
+  bleed(cv.stHead,t-180,400);
+  for(let i=0;i<F.steps;i++) A(cv["st"+i],[{opacity:0,transform:"translateY(6px)"},{opacity:1,transform:"none"}],t-30+i*110,380);
+  t+=Math.max(0,F.steps-1)*110+330;
+  // 7. 落款を押す（「とん」と朱のにじみ、台が暗くなる）→ 0.3秒おいて札が元の大きさへ収まり、ボタンが現れる
+  A(cv.seal,[{opacity:0,transform:"scale(1.7) rotate(-6deg)"},{opacity:1,transform:"scale(.94)",offset:.7},{opacity:1,transform:"none"}],t,420,{easing:"cubic-bezier(.3,1.3,.5,1)"});
+  const sealAt=t+290;
+  at(sealAt,stampNow);
+  blot(FW-100,FH-100,210,sealAt-30,620,.26,"176,58,32");
+  A(wrap,[{transform:ZT},{transform:"none"}],sealAt+300,620,{easing:"cubic-bezier(.3,.6,.3,1)"});
+  at(sealAt+300,reveal);
+  at(sealAt+300+640,end);
 }
 async function saveFuda(){
   const src=document.getElementById("fuda").src;
+  trackOnce("save-fuda");
   /* iPhoneはdownload属性だけだとカメラロールに落ちず長押し保存が必要になるので、
      共有シートを開いて「画像を保存」を選べば一気にカメラロールへ入るこちらを優先する */
   if(navigator.canShare){
@@ -2102,8 +2333,12 @@ function shareLine(){
   const text=`拾った言の葉：${words}\nいまのこころ：『${LAST.title}』\n\nなんでこんな気分か、自分でもよく分からない日は墨に聞いてみて\n${APP_URL}`;
   window.open("https://line.me/R/msg/text/?"+encodeURIComponent(text),"_blank");
 }
-function retryGarden(){
+function closeFuda(){
+  if(FL.run) FL.run.end();
   document.getElementById("overlay").classList.remove("active");
+}
+function retryGarden(){
+  closeFuda();
   startGarden();
 }
 function shareApp(){
