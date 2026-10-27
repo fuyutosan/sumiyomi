@@ -50,8 +50,12 @@
   var de=document.documentElement, done=false, need=2, ff=false;
   var GATED="h1 .tc,#title .subtitle,#title .roma,#title .yomi,#title .rakkan,#title .btn,#title .jikoku,#title .okuru";
   var calm=matchMedia("(prefers-reduced-motion: reduce)").matches, rate=1;
-  try{ if(!calm&&localStorage.getItem("sumiyomi-entered")==="1") rate=2.5; }catch(e){}
+  /* 第18回：投稿や動画のリンク（utm 付き）から初めて来た人も2.5倍速。中身を見てから来た人なので、ボタンまで待たせない。札のリンク（?f=）は utm を付けないので対象外 */
+  var fromLink=/[?&]utm_source=/.test(location.search), entered=false;
+  try{ entered=localStorage.getItem("sumiyomi-entered")==="1"; }catch(e){}
+  if(!calm&&(entered||fromLink)) rate=2.5;
   window.__titleRate=rate;
+  window.__fromLink=fromLink&&!entered&&!calm; /* 倍速で見せた人だけ。来たとき arrive-link、庭へ入ったら play-start-link を1回ずつ送る（倍速が効いたかを割合で見るため） */
   /* タイトル画面の演出（CSSアニメ）。withDrop が偽のときは、しずく（#drop）を除く */
   function fx(withDrop){
     return document.getAnimations().filter(function(x){
@@ -590,6 +594,12 @@ h1 .tc:nth-child(3){animation-delay:3.24s}
 .r-care-list{list-style:none;margin:4px 0 8px;padding:0}
 .r-care-list li{margin:0 0 6px}
 .r-care a{display:inline-block;color:var(--ink);text-underline-offset:4px}
+/* 第18回：見立てへの一押し（押した数を記録するだけ。画面は変えない）。重いときは出さない。正誤ではなく「距離」の言葉にして、占いの「当たった？」に見せない */
+.r-feel{margin:26px 0 0;text-align:center;font-size:.85rem;letter-spacing:.12em;color:var(--ink-70)}
+.r-feel:focus:not(:focus-visible){outline:none}
+.r-feel-q{margin:0}
+.r-feel button{background:none;border:none;color:inherit;font:inherit;letter-spacing:inherit;padding:10px 6px;margin:0 .5em;min-height:44px;cursor:pointer;text-decoration:underline;text-decoration-color:var(--ink-25);text-underline-offset:6px}
+.r-feel button:hover,.r-feel button:focus-visible{color:var(--shu);text-decoration-color:var(--shu)}
 .r-note{margin:22px 0 0;text-align:center;font-size:.78rem;line-height:1.9;letter-spacing:.04em;color:#66625a}
 
 /* ===== 結果札オーバーレイ ===== */
@@ -1453,10 +1463,20 @@ function flushTracks(){
 }
 window.flushTracks=flushTracks;
 flushTracks();
+if(window.__fromLink) track("arrive-link"); // play-start-link の割合の分母（リンクから初めて来て、倍速の入口を見た人）
 function trackOnce(name){
   if(playEvents.has(name)) return;
   playEvents.add(name);
   track(name);
+}
+/* 第18回：見立てへの一押し。1回の結果につき1回だけ記録し、二つのボタンを「受けとりました。」に替える（ほかの画面へは移らない） */
+function feel(b,k){
+  const g=b.closest(".r-feel");
+  if(!g) return;
+  trackOnce("feel-"+k); // ボタンはこのあとすぐ消えるので、二度押しは起きない
+  g.style.minHeight=g.offsetHeight+"px"; // 下の「札をつくる」が指の下で上へずれないよう、押す前の高さを保つ
+  g.innerHTML='<p class="r-feel-q">受けとりました。</p>';
+  g.tabIndex=-1; g.focus({preventScroll:true}); // 押したボタンが消えても、キーボードの位置を見失わない
 }
 const AXES = ["疲","憂","熾","寂","澄","灯","惑","温"];
 const SPLATS = [
@@ -1842,6 +1862,7 @@ function startGarden(){
   rvCancel(); // 結果の「間」の途中で戻ってきたとき、鈴や墨が庭に残らないように
   playEvents=new Set();
   trackOnce("play-start");
+  if(window.__fromLink){ window.__fromLink=false; track("play-start-link"); }
   try{ localStorage.setItem("sumiyomi-entered","1"); }catch(e){} // 一度でも庭に入った印：次からタイトルの演出を倍速にする（head の書体待ちスクリプト）
   score={}; AXES.forEach(a=>score[a]=0);
   picked=[]; answers=[]; qQueue=[]; qIndex=0;
@@ -2169,7 +2190,10 @@ function renderResult(){
           <li>${bx("ほかの窓口：")}<a class="nw" href="https://www.mhlw.go.jp/mamorouyokokoro/" target="_blank" rel="noopener">まもろうよ こころ</a>${bx("（厚生労働省）")}</li>
         </ul>
         <p>${bx("いますぐ危ないと感じたら、")}<span class="nw"><a href="tel:119">119</a>へ。</span></p>
-      </div>`:""}
+      </div>`:`<div class="r-feel" role="group" aria-live="polite">
+        <p class="r-feel-q">この見立ては、</p>
+        <button type="button" onclick="feel(this,'near')">近かった</button><button type="button" onclick="feel(this,'far')"><span class="nw">少し遠かった</span></button>
+      </div>`}
       <div class="r-btns">
         <button class="btn shu" onclick="makeFuda()">札をつくる</button>
         <button class="btn" onclick="startGarden()">もう一度 庭へ</button>
